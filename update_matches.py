@@ -14,8 +14,9 @@ URL = "https://api.football-data.org/v4/matches"
 
 today = datetime.now(timezone.utc).date()
 
+
 params = {
-    "dateFrom": (today - timedelta(days=30)).isoformat(),
+    "dateFrom": (today - timedelta(days=9)).isoformat(),
     "dateTo": today.isoformat(),
     "status": "FINISHED"
 }
