@@ -392,7 +392,219 @@ st.dataframe(
 )
 
 # ==========================================
-# 11. DATABASE DETAILS
+# 11. ADVANCED HISTORICAL ANALYTICS
+# ==========================================
+
+st.divider()
+st.header("Historical Team Analytics")
+st.caption(
+    "Explore completed results across seasons. These are descriptive "
+    "statistics, not forecasts or official standings."
+)
+
+# Build one record per team per completed match, across all available
+# seasons of the selected competition.
+history_games = df[df["competition"] == competition].copy()
+
+home_history = pd.DataFrame({
+    "Season": history_games["season"],
+    "Date": history_games["date"],
+    "Team": history_games["home_team"],
+    "Opponent": history_games["away_team"],
+    "Venue": "Home",
+    "GF": history_games["home_goals"],
+    "GA": history_games["away_goals"],
+})
+
+away_history = pd.DataFrame({
+    "Season": history_games["season"],
+    "Date": history_games["date"],
+    "Team": history_games["away_team"],
+    "Opponent": history_games["home_team"],
+    "Venue": "Away",
+    "GF": history_games["away_goals"],
+    "GA": history_games["home_goals"],
+})
+
+historical_team_matches = pd.concat(
+    [home_history, away_history], ignore_index=True
+)
+historical_team_matches["Win"] = (
+    historical_team_matches["GF"] > historical_team_matches["GA"]
+).astype(int)
+historical_team_matches["Draw"] = (
+    historical_team_matches["GF"] == historical_team_matches["GA"]
+).astype(int)
+historical_team_matches["Points"] = (
+    3 * historical_team_matches["Win"]
+    + historical_team_matches["Draw"]
+)
+
+history_teams = sorted(historical_team_matches["Team"].unique())
+team_for_history = st.selectbox(
+    "Select a team to study",
+    history_teams,
+    key="historical_team_selection",
+)
+
+selected_history = historical_team_matches[
+    historical_team_matches["Team"] == team_for_history
+].copy()
+
+# 11A: Season-to-season performance
+st.subheader("Season-by-Season Performance")
+
+season_history = (
+    selected_history.groupby("Season")
+    .agg(
+        Matches=("GF", "count"),
+        Wins=("Win", "sum"),
+        Goals_For=("GF", "sum"),
+        Goals_Against=("GA", "sum"),
+        Points=("Points", "sum"),
+    )
+    .reset_index()
+    .sort_values("Season")
+)
+season_history["Goals/game"] = (
+    season_history["Goals_For"] / season_history["Matches"]
+).round(2)
+season_history["Conceded/game"] = (
+    season_history["Goals_Against"] / season_history["Matches"]
+).round(2)
+season_history["Points/game"] = (
+    season_history["Points"] / season_history["Matches"]
+).round(2)
+
+st.dataframe(season_history, hide_index=True, use_container_width=True)
+if len(season_history) > 1:
+    st.line_chart(
+        season_history.set_index("Season")[
+            ["Goals/game", "Conceded/game"]
+        ]
+    )
+    st.bar_chart(
+        season_history.set_index("Season")[["Points/game"]]
+    )
+else:
+    st.info("Only one season is available for this team.")
+
+st.caption(
+    "Per-match rates allow comparison between partial and completed "
+    "seasons, but small samples are less reliable."
+)
+
+# 11B: Home and away splits in the selected season
+current_team_games = selected_history[
+    selected_history["Season"] == season
+].copy()
+
+st.subheader(f"Home vs Away | {season}")
+
+if current_team_games.empty:
+    st.info(f"{team_for_history} has no recorded matches in {season}.")
+else:
+    venue_summary = (
+        current_team_games.groupby("Venue")
+        .agg(
+            Matches=("GF", "count"),
+            Wins=("Win", "sum"),
+            Goals_For=("GF", "sum"),
+            Goals_Against=("GA", "sum"),
+            Points=("Points", "sum"),
+        )
+        .reset_index()
+    )
+    venue_summary["Goals/game"] = (
+        venue_summary["Goals_For"] / venue_summary["Matches"]
+    ).round(2)
+    venue_summary["Conceded/game"] = (
+        venue_summary["Goals_Against"] / venue_summary["Matches"]
+    ).round(2)
+    venue_summary["Points/game"] = (
+        venue_summary["Points"] / venue_summary["Matches"]
+    ).round(2)
+
+    st.dataframe(venue_summary, hide_index=True, use_container_width=True)
+    st.bar_chart(
+        venue_summary.set_index("Venue")[
+            ["Goals/game", "Conceded/game"]
+        ]
+    )
+
+    # 11C: Retrospective opponent-strength categories
+    st.subheader("Results by Opponent Strength")
+    league_rank = stats.copy()
+    league_rank["Points/game"] = (
+        league_rank["Points"] / league_rank["Matches"]
+    )
+    league_rank = league_rank.sort_values(
+        ["Points/game", "Goal_Difference"],
+        ascending=[False, False],
+    )
+    upper_half = set(
+        league_rank.head(max(1, len(league_rank) // 2))["Team"]
+    )
+
+    current_team_games["Opponent group"] = (
+        current_team_games["Opponent"]
+        .map(lambda t: "Upper half" if t in upper_half else "Lower half")
+    )
+
+    opponent_summary = (
+        current_team_games.groupby("Opponent group")
+        .agg(
+            Matches=("GF", "count"),
+            Wins=("Win", "sum"),
+            Goals_For=("GF", "sum"),
+            Goals_Against=("GA", "sum"),
+            Points=("Points", "sum"),
+        )
+        .reset_index()
+    )
+    opponent_summary["Points/game"] = (
+        opponent_summary["Points"] / opponent_summary["Matches"]
+    ).round(2)
+    opponent_summary["Goals/game"] = (
+        opponent_summary["Goals_For"] / opponent_summary["Matches"]
+    ).round(2)
+    opponent_summary["Conceded/game"] = (
+        opponent_summary["Goals_Against"] / opponent_summary["Matches"]
+    ).round(2)
+
+    st.dataframe(
+        opponent_summary, hide_index=True, use_container_width=True
+    )
+    st.caption(
+        "Upper/lower half is based on each opponent's points per game "
+        "in the selected season, using currently stored final results. "
+        "This is a retrospective grouping, not their strength at "
+        "the time each match was played. Points deductions are not included."
+    )
+
+    # 11D: Match-by-match rolling historical form
+    st.subheader("Match-by-Match Form")
+    form = current_team_games.sort_values("Date").reset_index(drop=True)
+    form["Match number"] = range(1, len(form) + 1)
+    form["Points/game (up to last 5)"] = (
+        form["Points"].rolling(window=5, min_periods=1).mean()
+    )
+    form["Goals/game (up to last 5)"] = (
+        form["GF"].rolling(window=5, min_periods=1).mean()
+    )
+
+    st.line_chart(
+        form.set_index("Match number")[
+            ["Points/game (up to last 5)", "Goals/game (up to last 5)"]
+        ]
+    )
+    st.caption(
+        "Each point averages the current and up to four earlier "
+        "completed matches. Early points use fewer than five games."
+    )
+
+# ==========================================
+# 12. DATABASE DETAILS
 # ==========================================
 
 st.divider()
