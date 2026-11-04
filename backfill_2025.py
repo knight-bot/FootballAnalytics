@@ -16,7 +16,7 @@ URL = (
     "competitions/PL/matches"
 )
 
-SEASONS = [2023, 2024, 2025]
+SEASONS = [2023, 2024, 2025, 2026]
 
 conn = sqlite3.connect("football.db")
 
