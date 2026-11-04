@@ -24,7 +24,12 @@ response = requests.get(
     timeout=30
 )
 
-response.raise_for_status()
+
+if response.status_code != 200:
+    print("HTTP status:", response.status_code)
+    print("API error:", response.text[:1000])
+    raise RuntimeError("Football API request failed")
+
 matches = response.json().get("matches", [])
 
 # Open persistent SQLite database
