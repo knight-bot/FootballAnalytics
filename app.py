@@ -17,6 +17,26 @@ st.set_page_config(
 
 DB_FILE = Path(__file__).resolve().parent / "football.db"
 
+# Check whether Streamlit has received a newer copy of the local
+# historical-results database. This does not call the football API.
+@st.fragment(run_every="5m")
+def check_database_file():
+    if not DB_FILE.exists():
+        return
+
+    current_version = DB_FILE.stat().st_mtime_ns
+    previous_version = st.session_state.get("database_file_version")
+
+    if previous_version is None:
+        st.session_state["database_file_version"] = current_version
+    elif current_version != previous_version:
+        st.session_state["database_file_version"] = current_version
+        st.cache_data.clear()
+        st.rerun()
+
+
+check_database_file()
+
 st.title("⚽ Football Analytics")
 st.caption("Historical football statistics and performance analysis")
 
@@ -87,6 +107,27 @@ df["season"] = df.apply(get_season, axis=1)
 # ==========================================
 
 st.sidebar.header("Filters")
+
+# Reload the latest database file that has been deployed with this app.
+if st.sidebar.button("Reload database", help="Reloads the database copy deployed to Streamlit."):
+    st.cache_data.clear()
+    st.rerun()
+
+if "updated_at" in df.columns:
+    last_changed = pd.to_datetime(
+        df["updated_at"], utc=True, errors="coerce"
+    ).max()
+    if pd.notna(last_changed):
+        st.sidebar.caption(
+            "Latest stored change: "
+            + last_changed.strftime("%d %b %Y %H:%M UTC")
+        )
+
+st.sidebar.caption(
+    "Checks for changes to the deployed historical database every "
+    "5 minutes while this page is open. "
+    "This does not trigger the GitHub data collector."
+)
 
 competitions = sorted(df["competition"].unique())
 
