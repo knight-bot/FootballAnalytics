@@ -4,8 +4,12 @@ import sqlite3
 import requests
 from datetime import datetime, timedelta, timezone
 
-# API configuration
+# ==========================================
+# STEP 1: API CONFIGURATION
+# ==========================================
+
 TOKEN = os.environ["FOOTBALL_API_TOKEN"]
+
 URL = "https://api.football-data.org/v4/matches"
 
 today = datetime.now(timezone.utc).date()
@@ -16,23 +20,39 @@ params = {
     "status": "FINISHED"
 }
 
-# Collect completed match results
+headers = {
+    "X-Auth-Token": TOKEN
+}
+
+# ==========================================
+# STEP 2: COLLECT FOOTBALL DATA
+# ==========================================
+
+print("Connecting to football-data.org...")
+print("Date range:", params["dateFrom"], "to", params["dateTo"])
+
 response = requests.get(
     URL,
-    headers={"X-Auth-Token": TOKEN},
+    headers=headers,
     params=params,
     timeout=30
 )
 
+print("HTTP status:", response.status_code)
 
-if response.status_code != 200:
-    print("HTTP status:", response.status_code)
-    print("API error:", response.text[:1000])
+# Display the actual API error, if any
+if not response.ok:
+    print("API error details:", response.text[:1000])
     raise RuntimeError("Football API request failed")
 
 matches = response.json().get("matches", [])
 
-# Open persistent SQLite database
+print("Matches retrieved:", len(matches))
+
+# ==========================================
+# STEP 3: CONNECT TO SQLITE DATABASE
+# ==========================================
+
 conn = sqlite3.connect("football.db")
 
 conn.execute("""
@@ -49,52 +69,95 @@ CREATE TABLE IF NOT EXISTS matches (
 )
 """)
 
+# ==========================================
+# STEP 4: DETECT NEW OR CHANGED MATCHES
+# ==========================================
+
 new_count = 0
 changed_count = 0
+unchanged_count = 0
 
-for m in matches:
-    score = m.get("score", {}).get("fullTime", {})
-    mid = m["id"]
+for match in matches:
+
+    score = match.get("score", {}).get("fullTime") or {}
+
+    match_id = match["id"]
 
     values = (
-        m["utcDate"],
-        m["competition"]["name"],
-        m["homeTeam"]["name"],
-        m["awayTeam"]["name"],
+        match["utcDate"],
+        match.get("competition", {}).get("name"),
+        match.get("homeTeam", {}).get("name"),
+        match.get("awayTeam", {}).get("name"),
         score.get("home"),
         score.get("away"),
-        m["status"]
+        match["status"]
     )
 
     old = conn.execute("""
         SELECT date, competition, home_team,
                away_team, home_goals, away_goals, status
-        FROM matches WHERE match_id = ?
-    """, (mid,)).fetchone()
+        FROM matches
+        WHERE match_id = ?
+    """, (match_id,)).fetchone()
 
     timestamp = datetime.now(timezone.utc).isoformat()
 
     if old is None:
+
         conn.execute("""
-            INSERT INTO matches
+            INSERT INTO matches (
+                match_id, date, competition,
+                home_team, away_team,
+                home_goals, away_goals,
+                status, updated_at
+            )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (mid, *values, timestamp))
+        """, (match_id, *values, timestamp))
+
         new_count += 1
 
     elif old != values:
+
         conn.execute("""
             UPDATE matches
-            SET date=?, competition=?, home_team=?,
-                away_team=?, home_goals=?, away_goals=?,
-                status=?, updated_at=?
-            WHERE match_id=?
-        """, (*values, timestamp, mid))
+            SET date = ?,
+                competition = ?,
+                home_team = ?,
+                away_team = ?,
+                home_goals = ?,
+                away_goals = ?,
+                status = ?,
+                updated_at = ?
+            WHERE match_id = ?
+        """, (*values, timestamp, match_id))
+
         changed_count += 1
 
+    else:
+        unchanged_count += 1
+
+# ==========================================
+# STEP 5: SAVE DATABASE
+# ==========================================
+
 conn.commit()
+
+total = conn.execute(
+    "SELECT COUNT(*) FROM matches"
+).fetchone()[0]
+
 conn.close()
 
-print(f"Retrieved: {len(matches)} matches")
-print(f"New: {new_count}")
-print(f"Changed: {changed_count}")
-print("Database update completed.")
+# ==========================================
+# STEP 6: DISPLAY RESULTS
+# ==========================================
+
+print("\n========== UPDATE SUMMARY ==========")
+print("New matches:", new_count)
+print("Changed matches:", changed_count)
+print("Unchanged matches:", unchanged_count)
+print("Total stored matches:", total)
+print("Database file: football.db")
+print("====================================")
+
+print("\nDatabase update completed successfully!")
