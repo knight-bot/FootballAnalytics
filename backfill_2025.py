@@ -16,7 +16,7 @@ response = requests.get(
     url,
     headers={"X-Auth-Token": token},
     params={
-        "season": 2025,
+        "season": 2024,
         "status": "FINISHED"
     },
     timeout=30
