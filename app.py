@@ -604,7 +604,134 @@ else:
     )
 
 # ==========================================
-# 12. DATABASE DETAILS
+# 12. DATA COVERAGE & CONSISTENCY
+# ==========================================
+
+st.divider()
+st.header("Data Coverage & Consistency")
+st.caption(
+    "Audit the historical results behind the charts. For the Premier "
+    "League, a completed 20-team season should contain 380 matches."
+)
+
+competition_history = df[df["competition"] == competition]
+today_utc = pd.Timestamp.now(tz="UTC")
+current_european_start = (
+    today_utc.year if today_utc.month >= 7 else today_utc.year - 1
+)
+coverage_rows = []
+
+for season_label, season_matches in competition_history.groupby("season"):
+    per_team = pd.concat(
+        [season_matches["home_team"], season_matches["away_team"]],
+        ignore_index=True,
+    ).value_counts()
+    match_count = season_matches["match_id"].nunique()
+    team_count = len(per_team)
+
+    if competition == "Premier League":
+        season_start = int(str(season_label)[:4])
+        if season_start >= current_european_start:
+            assessment = "Season in progress"
+        elif match_count == 380 and team_count == 20:
+            assessment = "Full season recorded"
+        else:
+            assessment = "Check coverage"
+        expected = "380 (completed season)" if season_start < current_european_start else "Not yet complete"
+    else:
+        assessment = "Not benchmarked"
+        expected = "Competition-specific"
+
+    coverage_rows.append({
+        "Season": season_label,
+        "Recorded matches": match_count,
+        "Teams": team_count,
+        "Fewest matches/team": int(per_team.min()),
+        "Most matches/team": int(per_team.max()),
+        "First result": season_matches["date"].min().strftime("%d %b %Y"),
+        "Latest result": season_matches["date"].max().strftime("%d %b %Y"),
+        "Expected": expected,
+        "Assessment": assessment,
+    })
+
+coverage_table = pd.DataFrame(coverage_rows).sort_values(
+    "Season", ascending=False
+)
+st.dataframe(coverage_table, hide_index=True, use_container_width=True)
+
+if competition == "Premier League":
+    missing_complete = coverage_table[
+        coverage_table["Assessment"] == "Check coverage"
+    ]
+    if len(missing_complete):
+        st.warning(
+            "One or more earlier Premier League seasons have fewer "
+            "than 380 matches or an unexpected team count. Inspect "
+            "the database before comparing those seasons."
+        )
+    else:
+        st.success(
+            "All recorded completed Premier League seasons have "
+            "the expected 380 matches and 20 teams."
+        )
+
+st.caption(
+    "These checks use completed matches in the local SQLite file. "
+    "They cannot confirm that the API has published every recent result. "
+    "Some competitions have different season structures."
+)
+
+# Retrospective consistency test: compare non-overlapping halves of one
+# team's past season. This does not create a future-match forecast.
+st.subheader("Historical Performance Consistency")
+
+if current_team_games.empty:
+    st.info("Select a season in which this team has recorded matches.")
+else:
+    ordered = current_team_games.sort_values(
+        ["Date", "Opponent"]
+    ).reset_index(drop=True)
+
+    if len(ordered) < 12:
+        st.info(
+            f"Only {len(ordered)} matches are available for "
+            f"{team_for_history} in {season}. Choose a completed "
+            "season for a more useful first-half/second-half comparison."
+        )
+    else:
+        midpoint = len(ordered) // 2
+        periods = [
+            ("Earlier matches", ordered.iloc[:midpoint]),
+            ("Later matches", ordered.iloc[midpoint:]),
+        ]
+        consistency_rows = []
+        for name, period in periods:
+            n = len(period)
+            consistency_rows.append({
+                "Period": name,
+                "Matches": n,
+                "Goals/game": round(period["GF"].sum() / n, 2),
+                "Conceded/game": round(period["GA"].sum() / n, 2),
+                "Points/game": round(period["Points"].sum() / n, 2),
+            })
+        consistency = pd.DataFrame(consistency_rows)
+        st.dataframe(
+            consistency, hide_index=True, use_container_width=True
+        )
+        st.bar_chart(
+            consistency.set_index("Period")[
+                ["Goals/game", "Conceded/game", "Points/game"]
+            ]
+        )
+        st.caption(
+            "The two periods contain different completed matches. "
+            "Differences can reflect opposition, injuries, tactical "
+            "changes, random variation, or uneven sample sizes. "
+            "This is a retrospective stability check, not a prediction."
+        )
+
+# ==========================================
+# 13. DATABASE DETAILS
 # ==========================================
 
 st.divider()
