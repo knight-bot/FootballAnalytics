@@ -51,6 +51,26 @@ are not independent proof of complete official league seasons.
 The platform is retrospective and does not generate future-match
 recommendations, odds or wagers.
 
+## Expand verified historical data
+
+The historical data pipeline now supports resumable, manually triggered
+backfill across up to 84 past days per run, bounded to at most 30
+completed-fixture enrichments. Existing IDs are skipped and successful
+imports survive later request failures.
+
+The **Historical Fixture Link Review** page supplies a source-check
+worksheet. After independently checking both providers, an operator
+can explicitly approve up to 20 one-to-one fixture pairs atomically
+through **Confirm Checked Historical Fixture Pairs**. No automatic
+cross-provider approval is performed.
+
+**Historical Coverage Audit** also shows A/B/C/D/U source quality
+grades by month and team, including reviewed two-sided xG coverage
+measured against locally stored match results.
+
+See [Historical Data Expansion](HISTORICAL_DATA_EXPANSION.md) for
+instructions, safeguards and workflow links.
+
 ## Verification and deployment
 
 The [historical audit workflow](https://github.com/knight-bot/FootballAnalytics/actions/workflows/historical-audit.yml)
