@@ -113,8 +113,8 @@ def coverage_matrix(conn, competition, season_start, team=None):
             "reviewed_sportmonks_id": (
                 sid if status.startswith("reviewed_") else None
             ),
-            "verified_home_xg": hxg,
-            "verified_away_xg": axg,
+            "reviewed_home_xg": hxg,
+            "reviewed_away_xg": axg,
         })
     counts = Counter(row["coverage_status"] for row in rows)
     count = len(rows)
@@ -201,10 +201,10 @@ def coverage_markdown(result):
     for item in result["rows"]:
         def safe(s):
             return str(s).replace("|", "/").replace("\n", " ")
-        h = (f"{item['verified_home_xg']:.2f}"
-             if item["verified_home_xg"] is not None else "Missing")
-        a = (f"{item['verified_away_xg']:.2f}"
-             if item["verified_away_xg"] is not None else "Missing")
+        h = (f"{item['reviewed_home_xg']:.2f}"
+             if item["reviewed_home_xg"] is not None else "Missing")
+        a = (f"{item['reviewed_away_xg']:.2f}"
+             if item["reviewed_away_xg"] is not None else "Missing")
         lines.append(
             f"| {item['date']} | {safe(item['home_team'])} | "
             f"{safe(item['away_team'])} | {item['match_id']} | "
