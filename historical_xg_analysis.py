@@ -183,8 +183,10 @@ def analyze_team_xg(conn, competition, season_start, team):
     total_ga = sum(row["goals_against"] for row in pairs)
     stored = imported_xg_coverage(conn)
     warnings = [
-        "Sportmonks final scores are NOT stored locally. Reviewed links "
-        "depend on manual operator attestation of source-score agreement.",
+        "Legacy Sportmonks imports may lack stored final scores. "
+        "Strict CURRENT scores are stored only after an eligible "
+        "fixture import or refresh. Operator review is still required "
+        "for all linked xG comparisons.",
         "All comparisons use completed, currently valid reviewed links; "
         "candidate or stale links are excluded.",
         "Missing, duplicate, negative or mismatched-participant standard "
