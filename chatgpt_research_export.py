@@ -29,10 +29,12 @@ def _chosen_fixture_ids(fixture_ids):
     for fixture_id in fixture_ids:
         if isinstance(fixture_id, bool):
             raise ValueError("Fixture IDs must be positive integers.")
-        try:
+        if isinstance(fixture_id, int):
+            numeric = fixture_id
+        elif isinstance(fixture_id, str) and fixture_id.isdecimal():
             numeric = int(fixture_id)
-        except (ValueError, TypeError):
-            raise ValueError("Fixture IDs must be positive integers.") from None
+        else:
+            raise ValueError("Fixture IDs must be positive integers.")
         if numeric <= 0:
             raise ValueError("Fixture IDs must be positive integers.")
         if numeric not in selected:
