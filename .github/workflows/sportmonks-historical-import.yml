@@ -35,12 +35,17 @@ jobs:
       - name: Compile importer and research dashboards
         run: |
           python -m py_compile sportmonks_historical_import.py
-          python -m py_compile historical_audit.py
+          python -m py_compile historical_audit.py historical_reports.py
           python -m py_compile pages/3_Sportmonks_Historical_Stats.py
           python -m py_compile pages/4_Historical_Data_Audit.py
+          python -m py_compile pages/5_Historical_Research_Reports.py
 
-      - name: Run offline database integrity and audit tests
-        run: python -m unittest -q test_sportmonks_historical_import.py test_historical_audit.py
+      - name: Run offline integrity and research report tests
+        run: |
+          python -m unittest -q \
+            test_sportmonks_historical_import.py \
+            test_historical_audit.py \
+            test_historical_reports.py
 
       - name: Import completed historical fixtures
         env:
