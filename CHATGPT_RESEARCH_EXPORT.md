@@ -15,16 +15,21 @@ only. **No OpenAI API key is needed.**
 
 The preview shows the exact Markdown that will be exported. The file contains
 a team historical-results report, home/away differences, source match IDs,
-optional separate Sportmonks fixture records, and coverage warnings.
+league-adjusted goal-strength indicators (Part A.2), reviewed historical
+standard xG (Part A.3), a **match-by-match coverage audit** (Part A.4),
+optional independent Sportmonks case studies, and limitations.
 
 ## Critical source rule
 
 The two providers have **different IDs**. Selecting a Sportmonks fixture
 alongside a team report does **not** mean the fixture involves that team. The
-case studies are independent unless explicitly verified elsewhere.
+separately selected case studies are independent.
 
-No automatic team-name or match-ID mapping occurs. Do not combine statistics
-across providers as if they belong to the same match.
+A historical candidate matcher exists, but only **currently
+operator-reviewed** source associations may appear as linked team examples.
+Operators attest that they compared source final scores; the application
+does not independently verify those source scores. Ambiguous, stale and
+unreviewed candidates cannot contribute to joined historical xG.
 
 ## What this tool does not do
 
@@ -37,9 +42,11 @@ across providers as if they belong to the same match.
 
 ## Quality and data-sharing notes
 
-Check the **Historical Data Audit** page for more detail about incomplete
-statistics. Some numeric rows may be absent even when the Sportmonks API
-returned statistical records.
+Check **Historical Coverage Audit** and **Historical Data Audit** for
+match-by-match and metric-level gaps. Some numeric rows may be absent even
+when the Sportmonks API returned statistical records. Coverage ratios are
+defined against valid results **stored locally**, not the complete official
+schedule.
 
 The exported report contains provider-derived football data and names, which
 will be shared with ChatGPT if you upload the file. Follow each provider's
@@ -49,8 +56,8 @@ data that your account is authorized to process.
 ## Verify the feature
 
 Open GitHub Actions -> **Audit Historical Football Data** -> **Run workflow**.
-The workflow runs syntax checks and offline unit tests (including the eight
-new export tests), without spending Sportmonks or OpenAI API calls.
+The workflow runs syntax checks and offline unit tests, without spending
+Sportmonks or OpenAI API calls.
 
 The Streamlit page and downloaded file also require a manual deployment test
 after the changes reach the hosting environment.
