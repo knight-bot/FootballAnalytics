@@ -1,6 +1,9 @@
 """Offline coverage classification tests using fictional historical fixtures."""
 import sqlite3
 import unittest
+from datetime import date
+
+from historical_quality_cli import compact_quality_summary, last_ended_season_start
 
 from confirm_historical_link import confirm_link
 from historical_season_quality import (
@@ -77,6 +80,17 @@ class SeasonQualityTests(unittest.TestCase):
         self.assertIn("Historical Season Source-Quality Audit",md)
         self.assertIn("25.00%",md)
         self.assertIn("Arsenal FC",md)
+
+    def test_ended_season_summary_is_local_and_source_scoped(self):
+        self.assertEqual(last_ended_season_start(date(2026,11,6)),2025)
+        self.assertEqual(last_ended_season_start(date(2026,5,6)),2024)
+        self.make(101,9001,3,"Arsenal","Everton")
+        report=build_quality_report(self.db,"Premier League",2024)
+        text=compact_quality_summary(report)
+        self.assertIn("Locally stored finished results",text)
+        self.assertIn("| C | 1 |",text)
+        self.assertIn("not a verified official league fixture count",text)
+        self.assertIn("No unreviewed xG",text)
 
     def test_no_results_is_honestly_unavailable(self):
         report=build_quality_report(self.db,"Premier League",2024)
