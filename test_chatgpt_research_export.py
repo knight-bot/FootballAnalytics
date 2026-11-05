@@ -172,6 +172,14 @@ class ExportTests(unittest.TestCase):
             export["markdown"],
         )
 
+    def test_historical_strength_section_is_included(self):
+        export = self.make()
+        md = export["markdown"]
+        self.assertIn("Part A.2: League-Adjusted Historical Goal Indicators", md)
+        self.assertIn("Historical league-adjusted team-strength indicators", md)
+        self.assertIn("League home goals/match", md)
+        self.assertIn("football-data.org match IDs: 701, 702", md)
+
     def test_no_external_api_is_required(self):
         export = self.make()
         self.assertIn(
