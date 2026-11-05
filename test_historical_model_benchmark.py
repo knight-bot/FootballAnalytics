@@ -148,7 +148,7 @@ class HistoricalBenchmarkTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "earlier-season"):
             run_historical_benchmark(self.conn, "Example League", 2023, 1)
         with self.assertRaisesRegex(ValueError, "held-out"):
-            run_historical_benchmark(self.conn, "Example League", 2022, 1)
+            run_historical_benchmark(self.conn, "Example League", 2026, 1)
 
     def test_bad_config_is_rejected(self):
         for lookback in (0, 6, True, "2"):
