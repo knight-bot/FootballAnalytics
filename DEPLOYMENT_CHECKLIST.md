@@ -32,6 +32,21 @@ links and reviewed two-sided xG matches.
 A new import in GitHub will not appear in the deployed app until
 the hosting platform updates its checked-out database.
 
+## New historical data expansion checks
+
+- Open **Historical Coverage Audit** and inspect the monthly and team
+  source-quality tables. Download the CSV and Markdown exports.
+- Open **Historical Fixture Link Review** and download the manual
+  provider-score review worksheet.
+- Confirm the new bulk-review workflow rejects a mismatched or
+  unreviewed pair in the offline tests. Never submit approval
+  without checking both original providers.
+- For a bounded, eligible historical date window, manually trigger
+  the resumable backfill. Check its checkpoint summary, then repeat
+  the same date range to verify existing fixture IDs are skipped.
+
+See [Historical Data Expansion](HISTORICAL_DATA_EXPANSION.md).
+
 ## 3. Manually navigate the primary research workflow
 
 - **Historical xG Analysis:** Open it, change a team and season,
