@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from historical_audit import audit_database
+from historical_fixture_linkage import candidate_links
 
 DB_PATH = Path(__file__).resolve().parent / "football.db"
 
@@ -17,6 +18,7 @@ def main():
         raise FileNotFoundError("football.db not found")
     with sqlite3.connect(f"file:{DB_PATH.as_posix()}?mode=ro", uri=True) as conn:
         report = audit_database(conn)
+        link_candidates = candidate_links(conn)
 
     fixtures = report["sportmonks_fixtures"]
     flagged = [row for row in fixtures if row["issue_count"]]
@@ -26,6 +28,19 @@ def main():
         for row in fixtures
     )
 
+    with_scores = sum(
+        row["stored_final_score_home"] is not None
+        and row["stored_final_score_away"] is not None
+        for row in fixtures
+    )
+    status_counts = {
+        status: sum(r["status"] == status for r in link_candidates)
+        for status in (
+            "reviewed", "review_candidate", "score_mismatch",
+            "ambiguous", "stale_review", "unmatched",
+        )
+    }
+
     lines = [
         "# FootballAnalytics Historical Data Audit",
         "",
@@ -33,8 +48,24 @@ def main():
         f"- Invalid completed result records: {report['invalid_result_rows']}",
         f"- Imported Sportmonks historical fixtures: {len(fixtures)}",
         f"- Fixtures with standard home and away xG: {complete_xg}",
+        f"- Fixtures with saved unambiguous CURRENT final score: {with_scores}",
+        f"- Operator-reviewed links currently valid: {status_counts['reviewed']}",
+        f"- Potential links awaiting review: {status_counts['review_candidate']}",
+        f"- Stored final-score conflicts: {status_counts['score_mismatch']}",
+        f"- Ambiguous or stale associations: "
+        f"{status_counts['ambiguous'] + status_counts['stale_review']}",
         f"- Sportmonks fixtures with audit findings: {len(flagged)}",
     ]
+    if len(fixtures) > 0 and with_scores == 0:
+        lines.append(
+            "- Notice: Existing imported fixtures need a source-score "
+            "refresh before automatic score agreement checks can run."
+        )
+    if status_counts["score_mismatch"]:
+        lines.append(
+            "- Notice: Stored final-score disagreements require "
+            "manual investigation; do not approve those source links."
+        )
     for issue in report["checks"]:
         lines.append(f"- Notice: {issue}")
     for row in flagged[:20]:
