@@ -84,20 +84,47 @@ def main():
         print("No recognized team xG array in the fixture response.")
     else:
         print("Team xG records detected:", len(xg_values))
-    # Identify which xG metric types are returned. Sportmonks may return
-    # multiple xG-related types per team, so never sum all records together.
+    # Sportmonks' published expected-statistic type IDs. Each type
+    # represents a distinct metric. Do not sum these different types.
+    metric_names = {
+        5304: "Expected Goals (xG)",
+        5305: "Expected Goals on Target (xGoT)",
+        7939: "Expected Points (xPTS)",
+        7940: "Expected Goals from Penalties",
+        7941: "Expected Goals from Free Kicks",
+        7942: "Expected Goals from Corners",
+        7943: "Non-Penalty xG",
+        7944: "Expected Goals from Set Plays",
+        7945: "Expected Goals from Open Play",
+        9684: "Expected Goals Difference",
+        9685: "Shooting Performance",
+        9686: "Expected Goals Prevented",
+        9687: "Expected Goals Against",
+    }
     xg_records = fixture.get("xgfixture")
     if isinstance(xg_records, list) and xg_records:
-        from collections import Counter
-        groups = Counter(
-            (str(item.get("type_id", "unknown")),
-             str(item.get("location", "unknown")))
-            for item in xg_records if isinstance(item, dict)
+        print("Historical match expected metrics:")
+        for item in sorted(
+            (x for x in xg_records if isinstance(x, dict)),
+            key=lambda x: (
+                int(x.get("type_id") or 0),
+                str(x.get("location") or ""),
+            ),
+        ):
+            type_id = item.get("type_id")
+            location = item.get("location") or "unknown"
+            value = (item.get("data") or {}).get("value")
+            name = metric_names.get(type_id, "Unknown metric")
+            print(
+                f"  {name} (type {type_id}), "
+                f"{location}: {value if value is not None else 'missing'}"
+            )
+        print(
+            "Only type 5304 represents regular team xG; "
+            "do not total the different metric types."
         )
-        print("xG record groups (type_id, venue, count):")
-        for (type_id, venue), count in sorted(groups.items()):
-            print(f"  type_id={type_id}; venue={venue}; entries={count}")
-        print("Type IDs need definitions before calculating team xG.")
+    else:
+        print("No historical xG metric records were returned.")
     print("Field inspection complete. No data was saved.")
 
 
