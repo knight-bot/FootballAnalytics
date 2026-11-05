@@ -31,7 +31,10 @@ def read_history(db_version):
             WHERE type='table' AND name='sportmonks_historical_fixtures'
         """).fetchone()
         if not exists:
-            return pd.DataFrame(), pd.DataFrame()
+            return (
+                pd.DataFrame(), pd.DataFrame(),
+                pd.DataFrame(), pd.DataFrame(),
+            )
         fixtures = pd.read_sql_query("""
             SELECT * FROM sportmonks_historical_fixtures
             ORDER BY match_date DESC, fixture_id DESC
@@ -44,10 +47,42 @@ def read_history(db_version):
             ON x.fixture_id=t.fixture_id AND
                x.participant_id=t.participant_id
         """, conn)
-        return fixtures, metrics
+        tables = {
+            row[0] for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        }
+        if "sportmonks_historical_statistics" in tables:
+            statistics = pd.read_sql_query("""
+                SELECT s.fixture_id, s.type_id, s.location,
+                       s.participant_id, s.value,
+                       t.name AS participant_name
+                FROM sportmonks_historical_statistics AS s
+                LEFT JOIN sportmonks_historical_teams AS t
+                  ON s.fixture_id=t.fixture_id
+                 AND s.participant_id=t.participant_id
+            """, conn)
+        else:
+            statistics = pd.DataFrame()
+
+        if "sportmonks_historical_pressure" in tables:
+            pressure = pd.read_sql_query("""
+                SELECT p.fixture_id, p.participant_id, p.minute,
+                       p.pressure, t.name AS participant_name
+                FROM sportmonks_historical_pressure AS p
+                LEFT JOIN sportmonks_historical_teams AS t
+                  ON p.fixture_id=t.fixture_id
+                 AND p.participant_id=t.participant_id
+            """, conn)
+        else:
+            pressure = pd.DataFrame()
+
+        return fixtures, metrics, statistics, pressure
 
 
-fixtures, all_metrics = read_history(DB_PATH.stat().st_mtime_ns)
+fixtures, all_metrics, all_statistics, all_pressure = read_history(
+    DB_PATH.stat().st_mtime_ns
+)
 
 if fixtures.empty:
     st.info(
@@ -141,6 +176,83 @@ else:
             "These values are estimates describing chances in the "
             "completed match. Other metric types must not be added to "
             "this xG total."
+        )
+
+st.divider()
+st.subheader("Historical Match Statistics")
+
+stat_names = {
+    42: "Total Shots",
+    86: "Shots on Target",
+    45: "Ball Possession",
+    34: "Corners",
+    78: "Tackles",
+}
+if all_statistics.empty:
+    st.info(
+        "No saved numeric fixture-statistic data is available yet. "
+        "Re-import this completed fixture with the updated manual "
+        "Sportmonks historical workflow to populate this section."
+    )
+else:
+    stats = all_statistics[
+        all_statistics["fixture_id"] == fixture_id
+    ].copy()
+    if stats.empty:
+        st.info("No numeric match statistics were returned for this fixture.")
+    else:
+        stats["Statistic"] = stats["type_id"].map(stat_names).fillna(
+            stats["type_id"].map(lambda x: f"Type {x} (unmapped)")
+        )
+        stats["Team / side"] = stats["participant_name"].fillna(
+            stats["location"].str.title()
+        )
+        st.dataframe(
+            stats[["Statistic", "Team / side", "value", "type_id"]]
+            .rename(columns={
+                "value": "Recorded value",
+                "type_id": "Sportmonks Type ID",
+            })
+            .sort_values(["Statistic", "Team / side"]),
+            hide_index=True,
+            use_container_width=True,
+        )
+        st.caption(
+            "Values come directly from historical fixture statistics. "
+            "Unknown type IDs remain visible rather than being guessed. "
+            "Different metrics use different units and should not be added."
+        )
+
+st.subheader("Pressure Index by Match Minute")
+
+if all_pressure.empty:
+    st.info(
+        "Minute-level Pressure Index has not yet been saved. "
+        "Re-import a completed fixture using the updated workflow."
+    )
+else:
+    pressure = all_pressure[
+        all_pressure["fixture_id"] == fixture_id
+    ].copy()
+    if pressure.empty:
+        st.info("No minute-level Pressure Index was available.")
+    else:
+        pressure["Team / side"] = pressure["participant_name"].fillna(
+            pressure["participant_id"].map(lambda x: f"Team {x}")
+        )
+        trend = pressure.pivot_table(
+            index="minute",
+            columns="Team / side",
+            values="pressure",
+            aggfunc="mean",
+        ).sort_index()
+        st.line_chart(trend)
+        st.caption(
+            f"{len(pressure):,} recorded pressure points over minutes "
+            f"{pressure['minute'].min()}–{pressure['minute'].max()}. "
+            "Sportmonks Pressure Index measures attacking momentum "
+            "at each minute, not the number of defensive pressing events. "
+            "This describes the completed match, not future performance."
         )
 
 st.divider()
