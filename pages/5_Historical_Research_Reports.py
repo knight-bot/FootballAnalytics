@@ -109,7 +109,7 @@ with team_tab:
                 )
                 report = team_report(db_version, comp, year, team)
                 summary = report["summary"]
-                if summary["matches"]:
+                if summary.get("played", 0):
                     c1, c2, c3, c4 = st.columns(4)
                     c1.metric("Recorded matches", summary["played"])
                     c2.metric("Wins", summary["wins"])
