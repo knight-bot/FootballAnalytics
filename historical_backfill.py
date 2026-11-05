@@ -2,7 +2,7 @@
 
 Runs the existing, guarded 14-day Sportmonks importer in chronological
 windows. Checkpoints only after each successful window. Re-running a
-range skips stored IDs; an interrupted window rolls back independently.
+range skips stored IDs; an interrupted an interrupted window preserves previously committed fixtures.
 No forecasts, live games, credentials in output, or provider ID joins.
 """
 import json
@@ -17,7 +17,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from sportmonks_historical_batch import (
-    MAX_FIXTURES, MAX_WINDOW_DAYS, MIN_AGE_DAYS, run_batch,
+    MAX_FIXTURES, MAX_WINDOW_DAYS, MIN_AGE_DAYS, run_batch, already_imported,
 )
 from sportmonks_historical_import import DB_PATH
 
@@ -58,11 +58,19 @@ def historical_windows(start, end):
         day = stop + timedelta(days=1)
 
 
-def run_backfill(session, token, conn, config):
-    """Resume by existing DB fixture IDs, committing each successful window.
+def has_fixture_table(conn):
+    return conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' "
+        "AND name='sportmonks_historical_fixtures'"
+    ).fetchone() is not None
 
-    On a failed window, roll it back and return a failed status. A GitHub
-    workflow writes the DB checkpoint first, then fails the job explicitly.
+
+def run_backfill(session, token, conn, config):
+    """Resume by stored IDs and preserve fixture-level atomic commits.
+
+    The underlying importer commits after each valid fixture; if a later
+    API call fails, count the persisted partial window and flag the job.
+    The workflow pushes all saved fixtures before reporting failure.
     """
     summary = {
         "requested_start": config["start"].isoformat(),
@@ -70,6 +78,7 @@ def run_backfill(session, token, conn, config):
         "fixture_budget": config["budget"],
         "enrichment_requests": 0,
         "newly_imported": 0,
+        "partial_saved_on_error": 0,
         "windows_completed": 0,
         "last_successful_window_end": None,
         "windows": [],
@@ -87,11 +96,16 @@ def run_backfill(session, token, conn, config):
             "limit": min(MAX_FIXTURES, remaining),
             "refresh_existing": False,
         }
+        before_ids = already_imported(conn) if has_fixture_table(conn) else set()
         try:
             result = run_batch(session, token, conn, window_config)
         except (ValueError, RuntimeError, requests.RequestException,
                 sqlite3.Error) as exc:
-            conn.rollback()
+            conn.rollback()  # only any unfinished fixture; earlier fixtures commit
+            after_ids = already_imported(conn) if has_fixture_table(conn) else set()
+            partially_saved = len(after_ids - before_ids)
+            summary["newly_imported"] += partially_saved
+            summary["partial_saved_on_error"] += partially_saved
             summary["has_error"] = True
             # Existing importer error messages deliberately avoid credentials.
             summary["error"] = (
@@ -136,6 +150,8 @@ def backfill_markdown(summary):
         f"**Status:** {state}",
         f"**Fixture enrichment calls:** {summary['enrichment_requests']}",
         f"**Completed fixtures saved:** {summary['newly_imported']}",
+        f"**Persisted before later API failure:** "
+        f"{summary['partial_saved_on_error']}",
         f"**Windows successfully checkpointed:** {summary['windows_completed']}",
         "**Last successful date window ended:** "
         + str(summary["last_successful_window_end"] or "None"),
