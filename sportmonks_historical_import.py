@@ -4,6 +4,7 @@ For historical research only. Does not pull live fixtures, odds or predictions.
 Stores source-specific metrics in separate SQLite tables.
 """
 import os
+import math
 import sqlite3
 import sys
 from datetime import datetime, timezone
@@ -73,6 +74,22 @@ def ensure_schema(conn):
             value REAL NOT NULL,
             PRIMARY KEY (fixture_id, type_id, location, participant_id)
         );
+        CREATE TABLE IF NOT EXISTS sportmonks_historical_statistics (
+            fixture_id INTEGER NOT NULL,
+            entry_index INTEGER NOT NULL,
+            type_id INTEGER NOT NULL,
+            participant_id INTEGER NOT NULL DEFAULT 0,
+            location TEXT NOT NULL,
+            value REAL NOT NULL,
+            PRIMARY KEY (fixture_id, entry_index)
+        );
+        CREATE TABLE IF NOT EXISTS sportmonks_historical_pressure (
+            fixture_id INTEGER NOT NULL,
+            participant_id INTEGER NOT NULL,
+            minute INTEGER NOT NULL,
+            pressure REAL NOT NULL,
+            PRIMARY KEY (fixture_id, participant_id, minute)
+        );
     """)
 
 
@@ -139,6 +156,44 @@ def store_finished_fixture(conn, fixture):
             str(location or "unknown"),
         ))
 
+    # Retain only numeric historical team-statistic values. Unknown
+    # type IDs are stored as IDs instead of being guessed or relabelled.
+    stat_rows = []
+    for index, item in enumerate(statistics):
+        if not isinstance(item, dict):
+            continue
+        type_id = item.get("type_id")
+        value = normalized_value(item)
+        if type_id is None or value is None:
+            continue
+        try:
+            stat_rows.append((
+                fixture_id, index, int(type_id),
+                int(item.get("participant_id") or 0),
+                str(item.get("location") or "unknown"), value,
+            ))
+        except (TypeError, ValueError):
+            continue
+
+    # Pressure Index records represent attacking momentum by minute,
+    # not a count of defensive pressing actions.
+    pressure_rows = []
+    for item in pressure:
+        if not isinstance(item, dict):
+            continue
+        try:
+            if item.get("participant_id") is None or item.get("minute") is None:
+                continue
+            value = float(item["pressure"])
+            if not math.isfinite(value):
+                continue
+            pressure_rows.append((
+                fixture_id, int(item["participant_id"]),
+                int(item["minute"]), value,
+            ))
+        except (KeyError, TypeError, ValueError):
+            continue
+
     fetched_at = datetime.now(timezone.utc).isoformat()
     with conn:
         conn.execute("""
@@ -165,14 +220,38 @@ def store_finished_fixture(conn, fixture):
             fetched_at,
         ))
         # Replace metric rows only for this fixture; do not affect others.
-        conn.execute(
-            "DELETE FROM sportmonks_historical_metrics WHERE fixture_id=?",
-            (fixture_id,),
-        )
-        conn.execute(
-            "DELETE FROM sportmonks_historical_teams WHERE fixture_id=?",
-            (fixture_id,),
-        )
+        if teams:
+            conn.execute(
+                "DELETE FROM sportmonks_historical_teams WHERE fixture_id=?",
+                (fixture_id,),
+            )
+        # If an API include is temporarily absent or empty, preserve the
+        # previously imported rows instead of silently erasing them.
+        if metrics:
+            conn.execute(
+                "DELETE FROM sportmonks_historical_metrics WHERE fixture_id=?",
+                (fixture_id,),
+            )
+        if stat_rows:
+            conn.execute(
+                "DELETE FROM sportmonks_historical_statistics WHERE fixture_id=?",
+                (fixture_id,),
+            )
+            conn.executemany("""
+                INSERT INTO sportmonks_historical_statistics
+                  (fixture_id, entry_index, type_id, participant_id, location, value)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, stat_rows)
+        if pressure_rows:
+            conn.execute(
+                "DELETE FROM sportmonks_historical_pressure WHERE fixture_id=?",
+                (fixture_id,),
+            )
+            conn.executemany("""
+                INSERT INTO sportmonks_historical_pressure
+                  (fixture_id, participant_id, minute, pressure)
+                VALUES (?, ?, ?, ?)
+            """, pressure_rows)
         conn.executemany("""
             INSERT OR REPLACE INTO sportmonks_historical_metrics
               (fixture_id, type_id, location, participant_id, value)
@@ -186,8 +265,8 @@ def store_finished_fixture(conn, fixture):
 
     print(
         f"Fixture {fixture_id}: saved {len(metrics)} xG-related metrics, "
-        f"{len(statistics)} statistical entries, "
-        f"{len(pressure)} pressure records."
+        f"{len(stat_rows)} numeric match-statistic values, "
+        f"{len(pressure_rows)} minute-level Pressure Index values."
     )
     return True
 
