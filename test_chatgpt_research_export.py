@@ -240,6 +240,51 @@ class ExportTests(unittest.TestCase):
         self.assertFalse(pack["xg_bootstrap_available"])
         self.assertIn("Bootstrap 95% interval (match resampling)", md)
 
+    def test_provenance_manifest_is_source_scoped(self):
+        export = self.make([9001])
+        manifest = export["manifest"]
+        self.assertEqual(manifest["schema_version"], "1.0")
+        self.assertEqual(manifest["scope"]["team"], "North")
+        self.assertEqual(
+            manifest["source_ids"]["recorded_team_match_ids"], [701, 702]
+        )
+        self.assertEqual(
+            manifest["source_ids"]["independent_sportmonks_case_study_ids"],
+            [9001],
+        )
+        self.assertEqual(
+            manifest["source_ids"]["operator_reviewed_cross_provider_links"],
+            [],
+        )
+        self.assertEqual(
+            manifest["source_status"]["selected_team_xg_complete"], 0
+        )
+        self.assertIn("Research data readiness and provenance",
+                      export["markdown"])
+        self.assertIn("not automatically", export["markdown"].lower())
+
+    def test_reviewed_link_is_explicit_in_manifest(self):
+        self.conn.execute(
+            "INSERT INTO matches VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (901, "2024-11-08T18:00:00Z", "Premier League",
+             "Example United", "Sample City", 2, 1, "FINISHED"),
+        )
+        confirm_link(self.conn, 9001, 901, "tester", True)
+        report = build_chatgpt_research_pack(
+            self.conn, "Premier League", 2024, "Example United",
+        )
+        links = report["manifest"]["source_ids"][
+            "operator_reviewed_cross_provider_links"
+        ]
+        self.assertEqual(
+            links, [{"football_data_match_id": 901,
+                     "sportmonks_fixture_id": 9001}]
+        )
+        self.assertEqual(
+            report["manifest"]["source_ids"]["reviewed_team_xg_match_ids"],
+            [901]
+        )
+
     def test_no_external_api_is_required(self):
         export = self.make()
         self.assertIn(
