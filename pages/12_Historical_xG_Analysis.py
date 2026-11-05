@@ -12,6 +12,10 @@ from historical_advanced_research import (
     season_sample_balance, opponent_context,
     historical_xg_diagnostics, advanced_markdown,
 )
+from historical_statistical_research import (
+    recorded_season_statistics, historical_season_comparison,
+    reviewed_xg_sensitivity, statistical_research_markdown,
+)
 
 st.set_page_config(
     page_title="Historical xG Analysis | FootballAnalytics",
@@ -69,6 +73,18 @@ def advanced_context(db_version, competition, year, team):
         sample = season_sample_balance(conn, competition, year)
         opponents = opponent_context(conn, competition, year, team)
     return sample, opponents
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def statistical_context(db_version, competition, year, team):
+    with closing(db()) as conn:
+        season = recorded_season_statistics(
+            conn, competition, year, team
+        )
+        years = historical_season_comparison(
+            conn, competition, year, years=4
+        )
+    return season, years
 
 
 version = DB_PATH.stat().st_mtime_ns
@@ -293,5 +309,130 @@ st.download_button(
         sample_balance, opponent_research, xg_diagnostics
     ).encode("utf-8"),
     file_name=f"historical_advanced_research_{year}.md",
+    mime="text/markdown",
+)
+
+
+st.divider()
+st.subheader("4. Recorded-match statistical research")
+st.caption(
+    "Historical results and sampling uncertainty only. Last-five form is "
+    "calculated using matches from dates strictly before each completed "
+    "match. No analysis of upcoming fixtures."
+)
+stat_season, stat_years = statistical_context(
+    version, competition, year, team
+)
+xg_uncertainty = reviewed_xg_sensitivity(analysis)
+lg = stat_season["league"]
+sc1, sc2, sc3, sc4 = st.columns(4)
+sc1.metric("Recorded finished league games", lg["recorded_matches"])
+sc2.metric(
+    "Historical home win share",
+    f"{100*lg['home_win_fraction']:.1f}%"
+    if lg["home_win_fraction"] is not None else "N/A"
+)
+sc3.metric(
+    "Recorded goals per game",
+    f"{lg['goals_per_match']:.2f}"
+    if lg["goals_per_match"] is not None else "N/A"
+)
+sc4.metric("Historical form rows with five earlier games",
+           stat_season["form_rows_available"])
+ci = lg["goals_per_match_bootstrap95"]
+if ci:
+    st.caption(
+        f"Approximate 95% match-resampling interval for recorded "
+        f"league goals per match: {ci[0]:.2f} to {ci[1]:.2f}. "
+        "This does not prove official-season coverage."
+    )
+else:
+    st.caption(
+        "Goals-per-match uncertainty withheld: fewer than 30 "
+        "valid recorded completed league matches."
+    )
+
+with st.expander("Historical team match outcomes and last-five form"):
+    outcomes = []
+    for label, key in (
+        ("Overall", "team_overall"),
+        ("Home", "team_home"),
+        ("Away", "team_away"),
+    ):
+        row = stat_season[key]
+        outcomes.append({
+            "Venue": label,
+            "Matches": row["matches"],
+            "Wins": row["wins"],
+            "Draws": row["draws"],
+            "Losses": row["losses"],
+            "Goals for": row["total_goals_for"],
+            "Goals against": row["total_goals_against"],
+        })
+    st.dataframe(
+        pd.DataFrame(outcomes), hide_index=True, use_container_width=True,
+    )
+    if stat_season["team_rows"]:
+        form_rows = pd.DataFrame(stat_season["team_rows"])
+        st.dataframe(
+            form_rows, hide_index=True, use_container_width=True,
+        )
+        st.download_button(
+            "Download completed historical form with source IDs (.csv)",
+            form_rows.to_csv(index=False).encode("utf-8"),
+            file_name=f"historical_recorded_form_{year}.csv",
+            mime="text/csv",
+        )
+        st.caption(
+            "A form value appears only when five matches played on "
+            "strictly earlier dates have been recorded in that season."
+        )
+
+with st.expander("Recorded scoring trends across historical seasons"):
+    yframe = pd.DataFrame(stat_years["by_season"])
+    st.dataframe(yframe, hide_index=True, use_container_width=True)
+    historical_points = yframe.dropna(subset=["goals_per_match"])
+    if not historical_points.empty:
+        st.line_chart(
+            historical_points.set_index("season")[
+                ["home_goals_per_match", "away_goals_per_match"]
+            ]
+        )
+    st.caption(
+        "A season being over does not mean the database contains "
+        "every official fixture. Ongoing seasons and small samples "
+        "are labeled, not treated as complete."
+    )
+
+st.markdown("**Reviewed historical xG sample sensitivity**")
+if xg_uncertainty["bootstrap_mean_difference95"] is None:
+    st.warning(
+        "xG uncertainty is unavailable until at least ten valid "
+        "operator-reviewed match-level xG observations exist. "
+        "Unreviewed Sportmonks data must not be used to fill the gap."
+    )
+else:
+    xg_low, xg_high = xg_uncertainty["bootstrap_mean_difference95"]
+    st.metric(
+        "Mean historical goals minus xG per reviewed game",
+        f"{xg_uncertainty['mean_goals_minus_xg_per_match']:+.3f}",
+    )
+    st.caption(
+        f"Approximate 95% bootstrap range: {xg_low:+.3f} to "
+        f"{xg_high:+.3f} goals per reviewed match. This is "
+        "within-sample sensitivity, not proven finishing skill."
+    )
+with st.expander("Statistical assumptions and warnings"):
+    for warning in (
+        stat_season["warnings"] + stat_years["warnings"] +
+        xg_uncertainty["warnings"]
+    ):
+        st.markdown(f"- {warning}")
+st.download_button(
+    "Download statistical research and uncertainty report (.md)",
+    statistical_research_markdown(
+        stat_season, stat_years, xg_uncertainty
+    ).encode("utf-8"),
+    file_name=f"historical_statistics_{year}.md",
     mime="text/markdown",
 )
