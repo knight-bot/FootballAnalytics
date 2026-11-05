@@ -204,7 +204,7 @@ def candidate_links(conn):
             row["result_score"] = result["score"]
             row["kickoff_difference_minutes"] = round(delta, 1)
             row["score_comparison"] = compare_stored_score(
-                source_scores.get(sid),
+                source_scores.get(row["sportmonks_id"]),
                 result["home_goals"], result["away_goals"],
             )
             if len(options) != 1 or usage[result["match_id"]] != 1:
