@@ -204,6 +204,17 @@ class ExportTests(unittest.TestCase):
         self.assertIn("901", md)
         self.assertIn("9001", md)
 
+    def test_match_by_match_coverage_is_included_without_unverified_xg(self):
+        report = self.make()
+        self.assertEqual(report["stored_coverage_count"], 2)
+        md = report["markdown"]
+        self.assertIn("Part A.4: Match-by-Match Historical Coverage", md)
+        self.assertIn("Historical match data coverage", md)
+        self.assertIn("701", md)
+        self.assertIn("702", md)
+        self.assertIn("no_imported_candidate", md)
+        self.assertIn("not all fixtures that", md.lower())
+
     def test_no_external_api_is_required(self):
         export = self.make()
         self.assertIn(
