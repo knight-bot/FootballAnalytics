@@ -7,6 +7,7 @@ from historical_audit import audit_database
 from historical_fixture_linkage import reviewed_links_for_team
 from historical_team_strength import analyze_season, strength_markdown
 from historical_xg_analysis import analyze_team_xg, team_xg_markdown
+from historical_coverage_matrix import coverage_matrix, coverage_markdown
 from historical_evidence import team_evidence
 from historical_reports import (
     build_sportmonks_report,
@@ -78,6 +79,7 @@ def build_chatgpt_research_pack(
     audit = audit_database(conn)
     strength = analyze_season(conn, competition, season_start)
     xg_review = analyze_team_xg(conn, competition, season_start, team)
+    linkage_coverage = coverage_matrix(conn, competition, season_start, team)
     reviewed_links = reviewed_links_for_team(
         conn, competition, season_start, team,
     )
@@ -213,6 +215,10 @@ def build_chatgpt_research_pack(
         "",
         team_xg_markdown(xg_review).strip(),
         "",
+        "## Part A.4: Match-by-Match Historical Coverage",
+        "",
+        coverage_markdown(linkage_coverage).strip(),
+        "",
         "## Part B: Independent Sportmonks Historical Case Studies",
         "",
         "The following are **separately selected historical fixtures**. They "
@@ -323,4 +329,5 @@ def build_chatgpt_research_pack(
         "fixture_ids": selected,
         "reviewed_link_count": len(reviewed_links),
         "reviewed_xg_count": xg_review["xg_complete_links"],
+        "stored_coverage_count": linkage_coverage["valid_finished_rows"],
     }
