@@ -1,7 +1,8 @@
 """GitHub Actions-only manual confirmation of one historical provider link.
 
-The Sportmonks importer does not persist the final score. The operator must
-check that score in both provider source records before approving any link.
+Older Sportmonks imports may lack saved scores, and new imports can
+retain strict CURRENT score evidence. The operator must still check
+both original provider final scores before approving a link.
 This script checks teams, league, completed state, kickoff and uniqueness,
 but cannot independently substantiate the operator's score attestation.
 """
