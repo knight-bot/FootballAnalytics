@@ -8,6 +8,10 @@ from historical_fixture_linkage import reviewed_links_for_team
 from historical_team_strength import analyze_season, strength_markdown
 from historical_xg_analysis import analyze_team_xg, team_xg_markdown
 from historical_coverage_matrix import coverage_matrix, coverage_markdown
+from historical_advanced_research import (
+    season_sample_balance, opponent_context,
+    historical_xg_diagnostics, advanced_markdown,
+)
 from historical_evidence import team_evidence
 from historical_reports import (
     build_sportmonks_report,
@@ -80,6 +84,9 @@ def build_chatgpt_research_pack(
     strength = analyze_season(conn, competition, season_start)
     xg_review = analyze_team_xg(conn, competition, season_start, team)
     linkage_coverage = coverage_matrix(conn, competition, season_start, team)
+    sample_balance = season_sample_balance(conn, competition, season_start)
+    opponent_research = opponent_context(conn, competition, season_start, team)
+    xg_diagnostics = historical_xg_diagnostics(xg_review)
     reviewed_links = reviewed_links_for_team(
         conn, competition, season_start, team,
     )
@@ -219,6 +226,12 @@ def build_chatgpt_research_pack(
         "",
         coverage_markdown(linkage_coverage).strip(),
         "",
+        "## Part A.5: Advanced Retrospective Research Diagnostics",
+        "",
+        advanced_markdown(
+            sample_balance, opponent_research, xg_diagnostics
+        ).strip(),
+        "",
         "## Part B: Independent Sportmonks Historical Case Studies",
         "",
         "The following are **separately selected historical fixtures**. They "
@@ -330,4 +343,5 @@ def build_chatgpt_research_pack(
         "reviewed_link_count": len(reviewed_links),
         "reviewed_xg_count": xg_review["xg_complete_links"],
         "stored_coverage_count": linkage_coverage["valid_finished_rows"],
+        "opponent_context_matches": opponent_research["matched_context_count"],
     }
