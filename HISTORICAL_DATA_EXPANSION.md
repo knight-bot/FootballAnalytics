@@ -19,9 +19,18 @@ matches on team names alone.
 Open [Backfill Completed Historical Football Data](https://github.com/knight-bot/FootballAnalytics/actions/workflows/historical-backfill.yml).
 
 Choose the `main` branch and set:
-- `start_date`: a past historical date, such as `2025-08-01`.
-- `end_date`: at most 84 inclusive days later, for example `2025-10-23`.
+- `start_date`: a past historical date with actual matches, such as
+  `2025-08-15`, the first day of the 2025/26 Premier League season.
+- `end_date`: at most 84 inclusive days later. For the first small
+  check, use `2025-08-28` (14 days, 10 fixture enrichments).
 - `max_fixtures`: 10 for the first check, then up to 30 per run.
+
+**Empty-date windows:** The 2025/26 Premier League began on
+15 August 2025. Earlier August windows can legitimately contain no
+league fixtures. The importer accepts an explicitly empty first-page
+`data: []` response with no pagination, but rejects missing fixture
+data, embedded error responses, and missing pagination when fixtures
+exist. An empty response is not proof of licensed historical coverage.
 
 The backfill splits the selected range into adjacent 14-day windows,
 uses the existing Sportmonks Premier League league ID 8 discovery, and
