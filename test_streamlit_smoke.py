@@ -43,5 +43,26 @@ class StreamlitSmokeTests(unittest.TestCase):
         self.assertEqual(before, after, "Streamlit pages changed football.db")
 
 
+    def test_research_filters_can_change_without_errors(self):
+        for relative, index in (
+            ("pages/7_ChatGPT_Research_Export.py", 2),
+            ("pages/13_Historical_Coverage_Audit.py", 2),
+        ):
+            with self.subTest(page=relative):
+                app = AppTest.from_file(
+                    str(ROOT / relative), default_timeout=60
+                ).run()
+                self.assertEqual(len(app.exception), 0)
+                self.assertGreater(len(app.selectbox), index)
+                control = app.selectbox[index]
+                options = list(control.options)
+                self.assertGreater(len(options), 1)
+                target = options[-1]
+                control.set_value(target).run()
+                self.assertEqual(
+                    [str(e.message) for e in app.exception], [],
+                    f"Changing selection on {relative} raised an exception."
+                )
+
 if __name__ == "__main__":
     unittest.main()
