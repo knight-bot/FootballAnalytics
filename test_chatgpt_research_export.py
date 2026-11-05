@@ -186,7 +186,7 @@ class ExportTests(unittest.TestCase):
         self.assertEqual(result["reviewed_xg_count"], 0)
         self.assertIn("No goal-minus-xG aggregate", result["markdown"])
 
-    def test_xg_section_uses_source_verified_team_and_both_sides(self):
+    def test_xg_section_uses_operator_reviewed_team_and_both_sides(self):
         self.conn.execute(
             "INSERT INTO matches VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (901, "2024-11-08T18:00:00Z", "Premier League",
