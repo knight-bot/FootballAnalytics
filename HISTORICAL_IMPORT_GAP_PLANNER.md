@@ -7,29 +7,26 @@ It turns those gaps into bounded, manual Sportmonks batch-import windows.
 The purpose is retrospective historical data quality research, not live
 gameweek assessment or wagering recommendations.
 
-## Immediate next import
+## Current status and targeted source-score refresh
 
-The previous historical batch run for **2026-10-17 through 2026-10-21**
-reported ten discovered completed Sportmonks fixtures and initially
-imported five. If the other five are still absent from football.db,
-you can re-run the *existing* manual importer with:
+The October 17–21, 2026 historical import is complete: 10 discovered,
+10 stored. A later read-only audit counted 11 historical Sportmonks
+fixtures (including one from another import), with two-sided xG on all
+11. The old imports do **not** yet have saved final-score evidence.
 
-- **start_date:** \`2026-10-17\`
-- **end_date:** \`2026-10-21\`
-- **max_fixtures:** \`10\`
-- **refresh_existing:** \`false\`
+To backfill `CURRENT` score evidence for the 10 fixtures in that window,
+use the existing manual **Discover and Import Historical Sportmonks Fixtures**
+workflow with `start_date=2026-10-17`,
+`end_date=2026-10-21`, `max_fixtures=10`, and
+`refresh_existing=true`.
+
+This historical refresh cannot create approved cross-provider links.
+The provider may not return unambiguous scores for all fixtures.
+For new date windows, leave `refresh_existing=false` unless an explicit
+source-data refresh is required.
 
 Open:
-
 https://github.com/knight-bot/FootballAnalytics/actions/workflows/sportmonks-historical-batch.yml
-
-The existing importer skips fixture IDs that are already present when
-\`refresh_existing\` is false. If the missing fixtures have since
-been imported, the workflow should report no new imports.
-
-The import requires the existing \`SPORTMONKS_API_TOKEN\` secret and
-account access to the subscribed historical Sportmonks data. This
-planning update does **not** run the API importer itself.
 
 ## Plan historical gaps for other dates
 
