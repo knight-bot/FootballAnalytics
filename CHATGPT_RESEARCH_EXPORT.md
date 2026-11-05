@@ -19,6 +19,14 @@ league-adjusted goal-strength indicators (Part A.2), reviewed historical
 standard xG (Part A.3), a **match-by-match coverage audit** (Part A.4),
 optional independent Sportmonks case studies, and limitations.
 
+## Additional statistical research
+
+**Part A.5** contains sample-balance checks, opponent same-venue
+other-game context, and reviewed historical xG diagnostics. The
+same calculations are available in the existing Historical xG
+Analysis Streamlit page. See
+[Advanced Retrospective Research](HISTORICAL_ADVANCED_RESEARCH.md).
+
 ## Critical source rule
 
 The two providers have **different IDs**. Selecting a Sportmonks fixture
