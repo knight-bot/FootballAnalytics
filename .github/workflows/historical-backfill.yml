@@ -71,7 +71,10 @@ jobs:
           from pathlib import Path
           report = json.loads(Path(".historical_backfill_status.json").read_text())
           if report["has_error"]:
-              raise SystemExit("A historical window failed after valid saved checkpoints. Rerun the same dates to resume.")
+              print("Historical provider request failed:", report["error"])
+              if report["newly_imported"] == 0:
+                  raise SystemExit("No fixtures were saved. Resolve the specific provider error before retrying.")
+              raise SystemExit("Some fixtures were saved, but a later request failed. Re-run the same dates after resolving the error.")
           if not report["complete_requested_range"]:
               print("The bounded fixture budget was reached. Rerun the same dates to resume.")
           else:
