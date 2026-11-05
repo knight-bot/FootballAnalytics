@@ -182,7 +182,9 @@ def main():
     if not token:
         raise ValueError("Missing SPORTMONKS_API_TOKEN GitHub Actions secret.")
     config = parse_backfill_config()
-    # HTTP 429 may require an hour-long reset. Stop and checkpoint rather\n    # than blocking a CI job waiting for an unbounded Retry-After.\n    retry = Retry(
+    # A 429 may require a long quota reset; stop and checkpoint safely.
+    # Never leave a CI job waiting for an unbounded Retry-After.
+    retry = Retry(
         total=2, backoff_factor=1, status_forcelist=[500, 502, 503, 504],
         allowed_methods=frozenset({"GET"}), respect_retry_after_header=False,
     )
