@@ -87,8 +87,8 @@ class HistoricalCoverageTests(unittest.TestCase):
         first = result["rows"][0]
         self.assertEqual(first["review_candidate_sportmonks_id"], 9001)
         self.assertIsNone(first["reviewed_sportmonks_id"])
-        self.assertIsNone(first["verified_home_xg"])
-        self.assertIsNone(first["verified_away_xg"])
+        self.assertIsNone(first["reviewed_home_xg"])
+        self.assertIsNone(first["reviewed_away_xg"])
 
     def test_verified_only_after_operator_attestation(self):
         confirm_link(self.db, 9001, 201, "tester", True)
@@ -101,8 +101,8 @@ class HistoricalCoverageTests(unittest.TestCase):
         self.assertEqual(first["coverage_status"], "reviewed_complete_xg")
         self.assertEqual(first["reviewed_sportmonks_id"], 9001)
         self.assertIsNone(first["review_candidate_sportmonks_id"])
-        self.assertAlmostEqual(first["verified_home_xg"], 1.4)
-        self.assertAlmostEqual(first["verified_away_xg"], 0.8)
+        self.assertAlmostEqual(first["reviewed_home_xg"], 1.4)
+        self.assertAlmostEqual(first["reviewed_away_xg"], 0.8)
 
     def test_reviewed_link_with_missing_xg_does_not_claim_coverage(self):
         confirm_link(self.db, 9002, 202, "tester", True)
@@ -110,8 +110,8 @@ class HistoricalCoverageTests(unittest.TestCase):
         self.assertEqual(result["reviewed_total"], 1)
         self.assertEqual(result["complete_xg"], 0)
         self.assertEqual(result["status_counts"]["reviewed_missing_xg"], 1)
-        self.assertIsNone(result["rows"][1]["verified_home_xg"])
-        self.assertIsNone(result["rows"][1]["verified_away_xg"])
+        self.assertIsNone(result["rows"][1]["reviewed_home_xg"])
+        self.assertIsNone(result["rows"][1]["reviewed_away_xg"])
         self.assertEqual(result["rows"][1]["reviewed_sportmonks_id"], 9002)
 
     def test_ambiguous_candidates_do_not_auto_join(self):
@@ -121,7 +121,7 @@ class HistoricalCoverageTests(unittest.TestCase):
         ))
         result = self.analyze()
         self.assertEqual(result["rows"][0]["coverage_status"], "ambiguous")
-        self.assertIsNone(result["rows"][0]["verified_home_xg"])
+        self.assertIsNone(result["rows"][0]["reviewed_home_xg"])
         self.assertIsNone(result["rows"][0]["reviewed_sportmonks_id"])
 
     def test_stale_review_is_disclosed_without_data_attachment(self):
@@ -134,7 +134,7 @@ class HistoricalCoverageTests(unittest.TestCase):
         self.assertEqual(result["status_counts"]["stale_review"], 1)
         self.assertEqual(result["reviewed_total"], 0)
         self.assertEqual(result["complete_xg"], 0)
-        self.assertIsNone(result["rows"][0]["verified_home_xg"])
+        self.assertIsNone(result["rows"][0]["reviewed_home_xg"])
 
     def test_mismatched_participant_xg_is_missing_not_zero(self):
         confirm_link(self.db, 9001, 201, "tester", True)
@@ -145,7 +145,7 @@ class HistoricalCoverageTests(unittest.TestCase):
         )
         result = self.analyze()
         self.assertEqual(result["status_counts"]["reviewed_missing_xg"], 1)
-        self.assertIsNone(result["rows"][0]["verified_home_xg"])
+        self.assertIsNone(result["rows"][0]["reviewed_home_xg"])
 
     def test_scope_and_status_exclusions(self):
         result = self.analyze()
