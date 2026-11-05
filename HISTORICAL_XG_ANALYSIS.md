@@ -8,6 +8,17 @@ project's historical matching workflow currently marks **reviewed**.
 This is descriptive historical research. It does not estimate scores
 for upcoming matches or recommend wagers.
 
+## Extended historical diagnostics
+
+The existing **Historical xG Analysis** page now includes season
+sample-balance checks, opponent other-game context, home/away xG
+splits, cumulative reviewed-match goals-versus-xG trends, and
+guarded descriptive correlation. These also appear in the
+ChatGPT research export under **Part A.5**.
+
+See [Advanced Retrospective Research](HISTORICAL_ADVANCED_RESEARCH.md)
+for the methodology and interpretation limits.
+
 ## How to use
 
 1. Open **Historical xG Analysis** in the Streamlit sidebar.
