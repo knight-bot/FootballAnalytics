@@ -4,6 +4,7 @@ Uses only the local completed-match SQLite database. No API requests,
 credentials, future-match analysis, or cross-provider fixture ID joins.
 """
 from historical_audit import audit_database
+from historical_fixture_linkage import reviewed_links_for_team
 from historical_evidence import team_evidence
 from historical_reports import (
     build_sportmonks_report,
@@ -73,6 +74,9 @@ def build_chatgpt_research_pack(
     )
     evidence = team_evidence(conn, competition, season_start, team)
     audit = audit_database(conn)
+    reviewed_links = reviewed_links_for_team(
+        conn, competition, season_start, team,
+    )
     audit_by_id = {
         item["fixture_id"]: item for item in audit["sportmonks_fixtures"]
     }
@@ -94,10 +98,11 @@ def build_chatgpt_research_pack(
         "source IDs in the evidence sections before accepting any conclusion.",
         "",
         "**Critical source rule:** A football-data.org match ID is NOT a "
-        "Sportmonks fixture ID. The two provider datasets have not been "
-        "joined or reconciled. Do not assert that a selected Sportmonks "
-        "case study describes the chosen team, competition or season unless "
-        "the underlying source records independently establish that link.",
+        "Sportmonks fixture ID. Only explicitly operator-reviewed "
+        "associations in Part A.1 may be considered linked, subject to "
+        "the stated manual-review limitations. Independently selected "
+        "Sportmonks case studies in Part B are NOT associated with this "
+        "team unless separately reviewed.",
         "",
         "## Data scope",
         "",
@@ -146,6 +151,54 @@ def build_chatgpt_research_pack(
         "",
     ])
     section.extend(f"- {_clean(item)}" for item in evidence["limitations"])
+    section.extend([
+        "",
+        "## Part A.1: Operator-Reviewed Historical Match Links",
+        "",
+        "These cross-provider associations were explicitly confirmed by a "
+        "GitHub workflow operator after comparing the original source "
+        "final scores. The application itself has not independently "
+        "confirmed Sportmonks' final scores, because that value was not "
+        "persisted in the imported records. The current stored names, "
+        "league and kickoff have been rechecked.",
+        "",
+        f"Currently valid operator-reviewed links for selected team: "
+        f"{len(reviewed_links)}",
+        "",
+    ])
+    if not reviewed_links:
+        section.extend([
+            "No operator-reviewed matching Sportmonks fixtures are available "
+            "for this team and season. Missing advanced statistics must "
+            "not be interpreted as zero.",
+            "",
+        ])
+    else:
+        for link in reviewed_links[:MAX_SPORTMONKS_CASES]:
+            section.extend([
+                f"**Reviewed association: football-data.org match "
+                f"{link['match_id']} ↔ Sportmonks fixture "
+                f"{link['sportmonks_id']}**",
+                "",
+                f"- Recorded fixture: {_clean(link['result_match'])}",
+                f"- Recorded final score (football-data.org): "
+                f"{_clean(link['result_score'])}",
+                f"- Kickoff difference: "
+                f"{link['kickoff_difference_minutes']} minutes",
+                f"- Review: {_clean(link['reason'])}",
+                "",
+                build_sportmonks_report(
+                    conn, link["sportmonks_id"]
+                )["markdown"].strip(),
+                "",
+            ])
+        if len(reviewed_links) > MAX_SPORTMONKS_CASES:
+            section.extend([
+                f"**Export limit:** {len(reviewed_links) - MAX_SPORTMONKS_CASES} "
+                "additional operator-reviewed fixtures are not included "
+                "in this bounded report.",
+                "",
+            ])
     section.extend([
         "",
         "## Part B: Independent Sportmonks Historical Case Studies",
@@ -256,4 +309,5 @@ def build_chatgpt_research_pack(
         "sportmonks_fixture_count": len(selected),
         "audit_warning_count": len(warnings),
         "fixture_ids": selected,
+        "reviewed_link_count": len(reviewed_links),
     }
