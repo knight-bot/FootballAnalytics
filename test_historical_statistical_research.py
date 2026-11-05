@@ -8,6 +8,7 @@ import unittest
 from datetime import date, datetime, timedelta
 from math import isfinite
 
+from historical_statistical_cli import build_scoring_summary
 from historical_statistical_research import (
     _boot_mean_interval, _wilson, historical_season_comparison,
     recorded_season_statistics, reviewed_xg_sensitivity,
@@ -92,8 +93,6 @@ class StatisticalResearchTests(unittest.TestCase):
             self.assertLessEqual(lower,frac)
             self.assertGreaterEqual(upper,frac)
             self.assertTrue(0<=lower<=upper<=1)
-        self.assertEqual(_wilson(1, 1), (0.2065493143772374,
-                                         1.0)) if False else None
         self.assertIsNone(_wilson(0,0))
 
     def test_bootstrap_deterministic_and_withheld_below_threshold(self):
@@ -235,6 +234,20 @@ class StatisticalResearchTests(unittest.TestCase):
         self.assertIn("100",md)
         self.assertIn("95% interval",md)
         self.assertIn("Unavailable",md)
+
+    def test_github_research_summary_uses_recorded_season_counts(self):
+        summary = build_scoring_summary(
+            self.db, "Example League", as_of_date=date(2026,11,5)
+        )
+        self.assertIn("Recorded historical league scoring trends",summary)
+        self.assertIn("2024/25",summary)
+        self.assertIn("| 2024/25 | 35 |",summary)
+        self.assertIn("not evidence",summary.lower())
+        self.assertNotIn("Sportsbook",summary)
+
+    def test_github_summary_empty_data_is_reported(self):
+        summary = build_scoring_summary(self.db,"Unknown League")
+        self.assertIn("No stored completed Unknown League",summary)
 
     def test_analysis_does_not_modify_database(self):
         before=list(self.db.iterdump())
