@@ -7,6 +7,7 @@ import pandas as pd
 import streamlit as st
 
 from historical_coverage_matrix import coverage_matrix, coverage_markdown
+from historical_season_quality import build_quality_report, quality_markdown
 from historical_reports import list_competitions, list_seasons, list_teams, season_label
 
 st.set_page_config(
@@ -54,6 +55,12 @@ def team_options(db_version, competition, year):
 def inspect(db_version, competition, year, team):
     with closing(open_readonly()) as conn:
         return coverage_matrix(conn, competition, year, team)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def season_grades(db_version, competition, year):
+    with closing(open_readonly()) as conn:
+        return build_quality_report(conn, competition, year)
 
 
 stamp = DB_PATH.stat().st_mtime_ns
@@ -151,3 +158,61 @@ st.caption(
     "Only unambiguous completed candidates can be operator-confirmed. "
     "This page does not modify source records or create links."
 )
+
+
+st.divider()
+st.subheader("Season-wide source-quality coverage")
+st.caption(
+    "Evidence levels use ALL locally recorded teams in the selected "
+    "competition and season, regardless of the optional team filter "
+    "above. These are local records, not the official league schedule."
+)
+quality = season_grades(stamp, competition, year)
+q1, q2, q3, q4 = st.columns(4)
+q1.metric("A: Reviewed, complete two-sided xG", quality["grades"]["A"])
+q2.metric("B: Reviewed, incomplete xG", quality["grades"]["B"])
+q3.metric("C: Unreviewed candidates", quality["grades"]["C"])
+q4.metric("D: Conflicts or stale/ambiguous", quality["grades"]["D"])
+st.caption(
+    f"U: No imported source candidate for {quality['grades']['U']} "
+    "locally recorded completed results. No missing data is "
+    "interpreted as zero."
+)
+
+if quality["by_month"]:
+    month_frame = pd.DataFrame(quality["by_month"])
+    st.markdown("**Monthly local source-quality coverage**")
+    st.dataframe(month_frame, hide_index=True, use_container_width=True)
+    st.bar_chart(
+        month_frame.set_index("month")[["A", "B", "C", "D", "U"]]
+    )
+    st.download_button(
+        "Download monthly source-quality CSV",
+        data=month_frame.to_csv(index=False).encode("utf-8"),
+        file_name=f"historical_source_quality_month_{year}.csv",
+        mime="text/csv",
+    )
+with st.expander("Recorded team-by-team data-quality coverage"):
+    if quality["by_team"]:
+        team_frame = pd.DataFrame(quality["by_team"])
+        st.dataframe(
+            team_frame, hide_index=True, use_container_width=True,
+        )
+        st.download_button(
+            "Download team source-quality CSV",
+            data=team_frame.to_csv(index=False).encode("utf-8"),
+            file_name=f"historical_source_quality_team_{year}.csv",
+            mime="text/csv",
+        )
+    else:
+        st.info("No valid locally recorded completed matches in this season.")
+
+st.download_button(
+    "Download source-quality season report (.md)",
+    data=quality_markdown(quality).encode("utf-8"),
+    file_name=f"historical_source_quality_{year}.md",
+    mime="text/markdown",
+)
+with st.expander("Meaning and limitations of the source-quality grades"):
+    for notice in quality["warnings"]:
+        st.markdown("- " + notice)
