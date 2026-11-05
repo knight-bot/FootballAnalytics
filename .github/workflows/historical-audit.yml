@@ -48,6 +48,7 @@ jobs:
           python -m py_compile research_readiness.py app.py
           python -m py_compile historical_backfill.py historical_season_quality.py
           python -m py_compile bulk_confirm_historical_links.py
+          python -m py_compile historical_quality_cli.py
           python -m py_compile test_streamlit_smoke.py
           python -m py_compile pages/8_Historical_Fixture_Link_Review.py
           python -m py_compile pages/7_ChatGPT_Research_Export.py
@@ -86,3 +87,6 @@ jobs:
 
       - name: Summarize actual recorded historical scoring trends
         run: python historical_statistical_cli.py
+
+      - name: Summarize completed-window historical source quality
+        run: python historical_quality_cli.py
