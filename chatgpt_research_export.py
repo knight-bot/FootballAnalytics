@@ -288,8 +288,10 @@ def build_chatgpt_research_pack(
     section.extend([
         "## Part C: Quality Warnings and Research Boundaries",
         "",
-        "- The two sources are separate. No automatic fixture-ID matching, "
-        "team-name mapping, or season reconciliation has been carried out.",
+        "- The sources use different fixture IDs. Candidate association "
+        "uses team names, league and kickoff, but candidates are NOT "
+        "automatically joined. Only currently valid operator-reviewed "
+        "associations are shown as linked historical evidence.",
         "- The team report is calculated from locally stored completed matches. "
         "It is not a certified full-season dataset or official standings.",
         "- Sportmonks selection is a bounded historical sample, not a full "
