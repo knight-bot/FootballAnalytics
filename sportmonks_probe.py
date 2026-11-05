@@ -63,7 +63,7 @@ def main():
 
     print("Fixture record found:", bool(fixture.get("id")))
     print("Available related data:")
-    for field in ("statistics", "participants", "scores", "xGFixture", "pressure"):
+    for field in ("statistics", "participants", "scores", "expected", "xGFixture", "pressure"):
         value = fixture.get(field)
         if isinstance(value, list):
             detail = f"{len(value)} entries"
@@ -73,6 +73,13 @@ def main():
             detail = "not present"
         print(f"  {field}: {detail}")
 
+    # Sportmonks documents the include as xGFixture, but some responses
+    # represent the xG records in a field named "expected".
+    expected = fixture.get("expected")
+    if isinstance(expected, list):
+        print("xG records under 'expected':", len(expected))
+    else:
+        print("No 'expected' xG list in this fixture response.")
     print("Field inspection complete. No data was saved.")
 
 
