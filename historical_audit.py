@@ -5,6 +5,8 @@ records present in the local SQLite database, not provider-wide coverage.
 """
 import sqlite3
 
+from historical_score_evidence import stored_final_scores
+
 TABLES = {
     "matches",
     "sportmonks_historical_fixtures",
@@ -12,6 +14,7 @@ TABLES = {
     "sportmonks_historical_metrics",
     "sportmonks_historical_statistics",
     "sportmonks_historical_pressure",
+    "sportmonks_historical_final_scores",
 }
 
 
@@ -106,6 +109,7 @@ def audit_database(conn):
         """):
             xg.setdefault(int(fixture_id), {})[location] = value
 
+    final_scores = stored_final_scores(conn)
     for (
         fixture_id, name, match_date, league_id, season_id,
         state_id, raw_stats, raw_pressure, raw_scores,
@@ -132,6 +136,7 @@ def audit_database(conn):
         )
         home_xg = xg.get(fixture_id, {}).get("home")
         away_xg = xg.get(fixture_id, {}).get("away")
+        final_score = final_scores.get(fixture_id)
         issues = []
         if state_id not in {5, 7, 8}:
             issues.append("Unexpected historical match state")
@@ -166,6 +171,12 @@ def audit_database(conn):
             "metrics_saved": metrics_saved,
             "standard_xg_home": home_xg,
             "standard_xg_away": away_xg,
+            "stored_final_score_home": (
+                final_score[0] if final_score is not None else None
+            ),
+            "stored_final_score_away": (
+                final_score[1] if final_score is not None else None
+            ),
             "issues": "; ".join(issues) if issues else "None detected",
             "issue_count": len(issues),
         })
