@@ -1,0 +1,79 @@
+name: Backfill Completed Historical Football Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "First historical day (YYYY-MM-DD)"
+        required: true
+        type: string
+      end_date:
+        description: "Last historical day (up to 84 days, at least 14 days old)"
+        required: true
+        type: string
+      max_fixtures:
+        description: "Maximum completed fixtures to enrich per run"
+        type: choice
+        required: true
+        options:
+          - "10"
+          - "20"
+          - "30"
+        default: "20"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: football-database-update
+  cancel-in-progress: false
+
+jobs:
+  historical_backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout historical database
+        uses: actions/checkout@v4
+      - name: Configure Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install historical import dependencies
+        run: python -m pip install requests
+      - name: Offline backfill regression tests
+        run: |
+          python -m py_compile historical_backfill.py
+          python -m unittest -q test_historical_backfill.py test_sportmonks_historical_batch.py test_sportmonks_historical_import.py
+      - name: Resume bounded completed-history backfill
+        env:
+          SPORTMONKS_API_TOKEN: ${{ secrets.SPORTMONKS_API_TOKEN }}
+          BACKFILL_START_DATE: ${{ inputs.start_date }}
+          BACKFILL_END_DATE: ${{ inputs.end_date }}
+          BACKFILL_MAX_FIXTURES: ${{ inputs.max_fixtures }}
+          BACKFILL_LEAGUE_ID: "8"
+        run: python historical_backfill.py
+      - name: Commit successfully saved completed fixtures
+        run: |
+          if [ -n "$(git status --porcelain football.db)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add football.db
+            git commit -m "Checkpoint completed historical fixture backfill"
+            git push
+          else
+            echo "No new historical fixtures saved."
+          fi
+      - name: Report partial errors after saving valid records
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path(".historical_backfill_status.json").read_text())
+          if report["has_error"]:
+              raise SystemExit("A historical window failed after valid saved checkpoints. Rerun the same dates to resume.")
+          if not report["complete_requested_range"]:
+              print("The bounded fixture budget was reached. Rerun the same dates to resume.")
+          else:
+              print("All selected historical windows fully checked.")
+          PY
