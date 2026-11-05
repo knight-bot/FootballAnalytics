@@ -2,6 +2,8 @@
 import sqlite3
 import unittest
 
+from confirm_historical_link import confirm_link
+
 from chatgpt_research_export import (
     MAX_SPORTMONKS_CASES,
     build_chatgpt_research_pack,
@@ -130,6 +132,37 @@ class ExportTests(unittest.TestCase):
         self.assertIn("Not confirmed", export["markdown"])
         self.assertIn("Missing", export["markdown"])
         self.assertIn("Standard xG not recorded", export["markdown"])
+
+    def test_reviewed_same_team_fixture_automatically_appears(self):
+        self.conn.execute(
+            "INSERT INTO matches VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (901, "2024-11-08T18:00:00Z", "Premier League",
+             "Example United", "Sample City", 2, 1, "FINISHED"),
+        )
+        self.assertTrue(
+            confirm_link(self.conn, 9001, 901, "unit-tester", True)
+        )
+        report = build_chatgpt_research_pack(
+            self.conn, "Premier League", 2024, "Example United",
+        )
+        self.assertEqual(report["reviewed_link_count"], 1)
+        md = report["markdown"]
+        self.assertIn("football-data.org match 901", md)
+        self.assertIn("Sportmonks fixture 9001", md)
+        self.assertIn("1.72", md)
+        self.assertIn("operator-reviewed", md.lower())
+
+    def test_unreviewed_fixture_never_auto_links(self):
+        self.conn.execute(
+            "INSERT INTO matches VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (901, "2024-11-08T18:00:00Z", "Premier League",
+             "Example United", "Sample City", 2, 1, "FINISHED"),
+        )
+        report = build_chatgpt_research_pack(
+            self.conn, "Premier League", 2024, "Example United",
+        )
+        self.assertEqual(report["reviewed_link_count"], 0)
+        self.assertIn("No operator-reviewed matching", report["markdown"])
 
     def test_invalid_historical_completed_rows_are_disclosed(self):
         export = self.make()
