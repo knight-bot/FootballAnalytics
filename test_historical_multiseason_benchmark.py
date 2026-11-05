@@ -4,6 +4,7 @@ import unittest
 from datetime import date, datetime
 from historical_multiseason_benchmark import (
     evaluate_historical_seasons, multiseason_markdown,
+    paired_heldout_delta_interval,
 )
 
 
@@ -179,6 +180,33 @@ class MultiSeasonTests(unittest.TestCase):
         self.assertIn("301, 302, 303, 401, 402", md)
         self.assertIn("Goal RMSE", md)
         self.assertIn("Pooled MAE difference", md)
+
+    def test_sensitivity_is_withheld_on_short_holdout(self):
+        result = self.evaluate()
+        self.assertIsNone(result["paired_mae_delta_bootstrap95"])
+        self.assertIsNotNone(result["leave_one_season_out_delta_range"])
+        low, high = result["leave_one_season_out_delta_range"]
+        self.assertLessEqual(low, high)
+        md = multiseason_markdown(result)
+        self.assertIn("Paired held-out match bootstrap 95% interval", md)
+        self.assertIn("Leave-one-held-out-season-out", md)
+
+    def test_match_paired_bootstrap_is_deterministic(self):
+        rows = [
+            {"league_absolute_error": 2.0,
+             "adjusted_absolute_error": 1.25 + (i % 2) * .1}
+            for i in range(50)
+        ]
+        a = paired_heldout_delta_interval(rows)
+        self.assertEqual(a, paired_heldout_delta_interval(rows))
+        self.assertLess(a[1], 0)
+        self.assertIsNone(paired_heldout_delta_interval(rows[:49]))
+
+    def test_one_year_only_does_not_claim_year_robustness(self):
+        result = self.evaluate(first=2024, last=2024)
+        self.assertEqual(result["seasons_included"], 1)
+        self.assertIsNone(result["leave_one_season_out_delta_range"])
+        self.assertIsNone(result["paired_mae_delta_bootstrap95"])
 
     def test_input_database_remains_unchanged(self):
         before = self.conn.execute(
