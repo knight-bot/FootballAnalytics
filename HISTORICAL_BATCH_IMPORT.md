@@ -52,6 +52,27 @@ The workflow uses the existing \`SPORTMONKS_API_TOKEN\` GitHub Actions
 - Runs fully offline unit tests before contacting Sportmonks.
 - Saves updated SQLite tables back to GitHub if the import changes the file.
 
+## Backfill final-score evidence for old historical imports
+
+The importer now saves a strict `CURRENT` final score (both home and
+away) from the Sportmonks `scores` include **only** for completed
+regular-time state 5 when the values and participants are unambiguous.
+Extra-time and penalty-ending matches stay manual-review cases.
+
+Pre-upgrade fixtures do not magically acquire these saved values.
+For the **October 17–21, 2026** window, which now contains all ten
+discovered records, use the existing manual GitHub Action with:
+`start_date=2026-10-17`,
+`end_date=2026-10-21`,
+`max_fixtures=10`,
+`refresh_existing=true`.
+
+This performs a bounded source refresh, not a new history import or a
+cross-provider link approval. Source score disagreement blocks new
+approval; agreement never approves a link by itself.
+
+See [Historical source-score quality checks](HISTORICAL_SOURCE_SCORE_QA.md).
+
 ## Limits and caveats
 
 - Importing 5 fixtures is a *sample*, **not a complete season or league**.
