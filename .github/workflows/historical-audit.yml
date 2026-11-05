@@ -2,6 +2,13 @@ name: Audit Historical Football Data
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "*.py"
+      - "pages/**"
+      - ".github/workflows/historical-audit.yml"
 
 permissions:
   contents: read
@@ -34,6 +41,7 @@ jobs:
           python -m py_compile historical_xg_analysis.py pages/12_Historical_xG_Analysis.py
           python -m py_compile historical_coverage_matrix.py pages/13_Historical_Coverage_Audit.py
           python -m py_compile historical_import_planner.py pages/14_Historical_Import_Gap_Planner.py
+          python -m py_compile historical_advanced_research.py
           python -m py_compile pages/8_Historical_Fixture_Link_Review.py
           python -m py_compile pages/7_ChatGPT_Research_Export.py
           python -m py_compile pages/4_Historical_Data_Audit.py
