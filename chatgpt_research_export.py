@@ -181,10 +181,10 @@ def build_chatgpt_research_pack(
         "",
         "These cross-provider associations were explicitly confirmed by a "
         "GitHub workflow operator after comparing the original source "
-        "final scores. The application itself has not independently "
-        "confirmed Sportmonks' final scores, because that value was not "
-        "persisted in the imported records. The current stored names, "
-        "league and kickoff have been rechecked.",
+        "final scores. Newer imports may store strict CURRENT source "
+        "scores and flag conflicts, but matching scores never provide "
+        "automatic approval. The current stored names, league, kickoff "
+        "and any available score evidence have been rechecked.",
         "",
         f"Currently valid operator-reviewed links for selected team: "
         f"{len(reviewed_links)}",
