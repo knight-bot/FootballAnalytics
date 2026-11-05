@@ -3,6 +3,7 @@
 The export runs locally from football.db and does not require OpenAI API
 credentials. Sportmonks examples remain independent of the selected team.
 """
+import json
 import sqlite3
 from contextlib import closing
 from pathlib import Path
@@ -139,12 +140,35 @@ c3.metric("Reviewed links with complete xG", pack["reviewed_xg_count"])
 c4.metric("Separate case studies", pack["sportmonks_fixture_count"])
 c5.metric("Selected fixture audit flags", pack["audit_warning_count"])
 
+if pack["reviewed_xg_count"] == 0:
+    st.warning(
+        "The report includes recorded goal-based analysis, but NO "
+        "operator-reviewed match-level xG evidence for this team "
+        "and season. Independent Sportmonks samples are not joined."
+    )
+elif not pack["xg_bootstrap_available"]:
+    st.info(
+        "A small reviewed xG sample is present. Historical xG uncertainty "
+        "remains unavailable below ten completed, reviewed matches."
+    )
+
 st.download_button(
     "Download ChatGPT research report (.md)",
     data=pack["markdown"].encode("utf-8"),
     file_name=f"football_historical_research_{year}.md",
     mime="text/markdown",
     type="primary",
+)
+st.download_button(
+    "Download source evidence manifest (.json)",
+    data=json.dumps(pack["manifest"], indent=2).encode("utf-8"),
+    file_name=f"football_historical_source_manifest_{year}.json",
+    mime="application/json",
+)
+st.caption(
+    "The accompanying JSON manifest identifies stored match IDs, "
+    "operator-reviewed cross-provider associations, independent "
+    "Sportmonks examples and evidence limits."
 )
 st.caption(
     "Download the file and upload it to ChatGPT for a critical historical "
