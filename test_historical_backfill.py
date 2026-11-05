@@ -166,6 +166,24 @@ class BackfillTests(unittest.TestCase):
         self.assertEqual(resumed["newly_imported"],1)
         self.assertTrue(resumed["complete_requested_range"])
 
+    def test_rate_limit_is_reported_without_credentials(self):
+        class RateLimitedSession(FakeSession):
+            def get(self,url,**kw):
+                if "/between/" in url:
+                    response = super().get(url,**kw)
+                    response.ok = False
+                    response.status_code = 429
+                    return response
+                return super().get(url,**kw)
+        report=run_backfill(
+            RateLimitedSession(),"dummy-secret",self.db,
+            config(end="2025-09-14")
+        )
+        self.assertTrue(report["has_error"])
+        self.assertIn("HTTP 429",report["error"])
+        self.assertNotIn("dummy-secret",report["error"])
+        self.assertEqual(report["newly_imported"],0)
+
     def test_empty_range_has_no_fabricated_imports(self):
         report=run_backfill(
             FakeSession(pages=[[]]),"dummy",self.db,
