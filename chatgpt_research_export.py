@@ -5,6 +5,7 @@ credentials, future-match analysis, or cross-provider fixture ID joins.
 """
 from historical_audit import audit_database
 from historical_fixture_linkage import reviewed_links_for_team
+from historical_team_strength import analyze_season, strength_markdown
 from historical_evidence import team_evidence
 from historical_reports import (
     build_sportmonks_report,
@@ -74,6 +75,7 @@ def build_chatgpt_research_pack(
     )
     evidence = team_evidence(conn, competition, season_start, team)
     audit = audit_database(conn)
+    strength = analyze_season(conn, competition, season_start)
     reviewed_links = reviewed_links_for_team(
         conn, competition, season_start, team,
     )
@@ -200,6 +202,10 @@ def build_chatgpt_research_pack(
                 "",
             ])
     section.extend([
+        "",
+        "## Part A.2: League-Adjusted Historical Goal Indicators",
+        "",
+        strength_markdown(strength, team).strip(),
         "",
         "## Part B: Independent Sportmonks Historical Case Studies",
         "",
