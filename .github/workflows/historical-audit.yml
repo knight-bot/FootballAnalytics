@@ -21,14 +21,19 @@ jobs:
       - name: Install test dependency
         run: python -m pip install requests
 
-      - name: Check Python syntax
+      - name: Check research report and audit Python syntax
         run: |
           python -m py_compile historical_audit.py audit_history_cli.py
+          python -m py_compile historical_reports.py
           python -m py_compile pages/4_Historical_Data_Audit.py
+          python -m py_compile pages/5_Historical_Research_Reports.py
 
-      - name: Run offline data integrity tests
+      - name: Run offline database and historical-report tests
         run: |
-          python -m unittest -q test_sportmonks_historical_import.py test_historical_audit.py
+          python -m unittest -q \
+            test_sportmonks_historical_import.py \
+            test_historical_audit.py \
+            test_historical_reports.py
 
       - name: Summarize historical data quality
         run: python audit_history_cli.py
