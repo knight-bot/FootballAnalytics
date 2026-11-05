@@ -180,6 +180,30 @@ class ExportTests(unittest.TestCase):
         self.assertIn("League home goals/match", md)
         self.assertIn("football-data.org match IDs: 701, 702", md)
 
+    def test_xg_section_excludes_unreviewed_fixture(self):
+        result = self.make()
+        self.assertIn("Part A.3: Reviewed Historical xG Evidence", result["markdown"])
+        self.assertEqual(result["reviewed_xg_count"], 0)
+        self.assertIn("No goal-minus-xG aggregate", result["markdown"])
+
+    def test_xg_section_uses_source_verified_team_and_both_sides(self):
+        self.conn.execute(
+            "INSERT INTO matches VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (901, "2024-11-08T18:00:00Z", "Premier League",
+             "Example United", "Sample City", 2, 1, "FINISHED"),
+        )
+        confirm_link(self.conn, 9001, 901, "unit-tester", True)
+        report = build_chatgpt_research_pack(
+            self.conn, "Premier League", 2024, "Example United",
+        )
+        self.assertEqual(report["reviewed_xg_count"], 1)
+        md = report["markdown"]
+        self.assertIn("Part A.3: Reviewed Historical xG Evidence", md)
+        self.assertIn("1.72", md)
+        self.assertIn("0.85", md)
+        self.assertIn("901", md)
+        self.assertIn("9001", md)
+
     def test_no_external_api_is_required(self):
         export = self.make()
         self.assertIn(
