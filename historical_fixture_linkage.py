@@ -129,6 +129,7 @@ def candidate_links(conn):
             location, []
         ).append(name)
 
+    source_scores = stored_final_scores(conn)
     provisional = []
     for fixture_id, name, date, league_id, state_id in conn.execute(
         "SELECT fixture_id, name, match_date, league_id, state_id "
@@ -192,7 +193,6 @@ def candidate_links(conn):
         for _, candidate in options
     )
     reviewed = _get_reviewed(conn)
-    source_scores = stored_final_scores(conn)
     rows = []
     for row, options in provisional:
         reviewed_link = reviewed.get(row["sportmonks_id"])
