@@ -28,6 +28,7 @@ jobs:
           python -m py_compile sportmonks_historical_batch.py
           python -m py_compile chatgpt_research_export.py
           python -m py_compile historical_fixture_linkage.py confirm_historical_link.py
+          python -m py_compile historical_team_strength.py pages/9_Historical_Team_Strength.py
           python -m py_compile pages/8_Historical_Fixture_Link_Review.py
           python -m py_compile pages/7_ChatGPT_Research_Export.py
           python -m py_compile pages/4_Historical_Data_Audit.py
@@ -43,7 +44,8 @@ jobs:
             test_historical_evidence_ai.py \
             test_sportmonks_historical_batch.py \
             test_chatgpt_research_export.py \
-            test_historical_fixture_linkage.py
+            test_historical_fixture_linkage.py \
+            test_historical_team_strength.py
 
       - name: Summarize historical data quality
         run: python audit_history_cli.py
