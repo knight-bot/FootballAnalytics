@@ -25,8 +25,8 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install test dependency
-        run: python -m pip install requests
+      - name: Install application and testing dependencies
+        run: python -m pip install -r requirements.txt
 
       - name: Check research and evidence Python syntax
         run: |
@@ -45,6 +45,8 @@ jobs:
           python -m py_compile historical_advanced_research.py
           python -m py_compile historical_statistical_research.py
           python -m py_compile historical_statistical_cli.py
+          python -m py_compile research_readiness.py app.py
+          python -m py_compile test_streamlit_smoke.py
           python -m py_compile pages/8_Historical_Fixture_Link_Review.py
           python -m py_compile pages/7_ChatGPT_Research_Export.py
           python -m py_compile pages/4_Historical_Data_Audit.py
@@ -68,7 +70,11 @@ jobs:
             test_historical_xg_analysis.py \
             test_historical_coverage_matrix.py \
             test_historical_import_planner.py \
-            test_historical_statistical_research.py
+            test_historical_statistical_research.py \
+            test_research_readiness.py
+
+      - name: Smoke-test Streamlit homepage and research pages
+        run: python -m unittest -q test_streamlit_smoke.py
 
       - name: Summarize historical data quality
         run: python audit_history_cli.py
