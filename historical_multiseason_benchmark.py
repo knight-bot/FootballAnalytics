@@ -7,6 +7,7 @@ become training data for *later* folds. Never estimates future fixtures.
 No provider joins, API requests, odds, or wagering functionality.
 """
 from datetime import date, datetime, timezone
+from random import Random
 from historical_model_benchmark import (
     _metrics, run_historical_benchmark, DEFAULT_SHRINKAGE,
 )
@@ -15,6 +16,38 @@ from historical_reports import _bounds, season_label
 MAX_EVALUATION_SEASONS = 8
 DEFAULT_MIN_TRAIN = 50
 DEFAULT_MIN_TEST = 30
+
+MIN_BOOTSTRAP_HELDOUT = 50
+BOOTSTRAP_REPS = 600
+
+
+def paired_heldout_delta_interval(rows, minimum=MIN_BOOTSTRAP_HELDOUT):
+    """Match-paired historical goal-MAE improvement uncertainty, not a forecast.
+
+    One complete held-out match is a resampling unit, so its home/away
+    goal errors remain paired. This assumes matches are independent,
+    which is imperfect with repeated teams and seasons.
+    """
+    if len(rows) < minimum:
+        return None
+    values = [
+        row["adjusted_absolute_error"] - row["league_absolute_error"]
+        for row in rows
+    ]
+    rng = Random(20261105)
+    n = len(values)
+    boot = sorted(
+        sum(values[rng.randrange(n)] for _ in range(n)) / n
+        for _ in range(BOOTSTRAP_REPS)
+    )
+    def pct(p):
+        pos = (n_boot-1)*p
+        i = int(pos)
+        j = min(i+1, n_boot-1)
+        return boot[i] + (boot[j]-boot[i])*(pos-i)
+    n_boot = len(boot)
+    return pct(.025), pct(.975)
+
 
 
 def _positive_threshold(value, name):
@@ -61,6 +94,7 @@ def evaluate_historical_seasons(
 
     year_rows = []
     included_results = []
+    heldout_rows_by_season = {}
     heldout_ids = set()
     for year in range(first_test_season, last_test_season + 1):
         _, exclusive_end = _bounds(year)
@@ -146,6 +180,7 @@ def evaluate_historical_seasons(
         })
         year_rows.append(item)
         included_results.extend(result["rows"])
+        heldout_rows_by_season[year] = result["rows"]
 
     pooled_baseline = (
         _metrics(included_results, "league") if included_results else None
@@ -160,6 +195,23 @@ def evaluate_historical_seasons(
         pooled_adjusted["mae"] - pooled_baseline["mae"]
         if included_results else None
     )
+    paired_interval = paired_heldout_delta_interval(included_results)
+    leave_one_season_out = None
+    if len(heldout_rows_by_season) >= 3:
+        sensitivity_deltas = []
+        for omitted in heldout_rows_by_season:
+            kept = [
+                row for year, rows in heldout_rows_by_season.items()
+                if year != omitted for row in rows
+            ]
+            sensitivity_deltas.append(
+                sum(row["adjusted_absolute_error"] -
+                    row["league_absolute_error"] for row in kept)
+                / len(kept)
+            )
+        leave_one_season_out = (
+            min(sensitivity_deltas), max(sensitivity_deltas)
+        )
     warnings = [
         "Rolling-origin folds use only preceding seasons for each fit. "
         "A season held out in an earlier fold may become training data "
@@ -172,11 +224,27 @@ def evaluate_historical_seasons(
         "season averages. Only included historical folds contribute.",
         "The evaluation contains no live fixtures, betting rankings, "
         "future-game scores, or wagering recommendations.",
+        "Match-paired resampling of absolute-goal error differences "
+        "assumes game observations are independent; repeated teams "
+        "and seasons make this imperfect. Intervals describe this "
+        "historical holdout only and are NOT future accuracy guarantees.",
+        "Leave-one-season-out differences assess sensitivity to a "
+        "single included historical season, not causal model superiority.",
     ]
     if skipped:
         warnings.append(
             f"{len(skipped)} historical season(s) excluded from pooled "
             "results due to incomplete dates or inadequate coverage."
+        )
+    if paired_interval is None:
+        warnings.append(
+            f"Paired historical error interval withheld below "
+            f"{MIN_BOOTSTRAP_HELDOUT} completed held-out matches."
+        )
+    if leave_one_season_out is None:
+        warnings.append(
+            "Leave-one-season-out sensitivity requires at least "
+            "three eligible held-out years."
         )
     if len(included) < 2:
         warnings.append(
@@ -201,6 +269,8 @@ def evaluate_historical_seasons(
         "pooled_baseline": pooled_baseline,
         "pooled_adjusted": pooled_adjusted,
         "pooled_mae_delta": difference,
+        "paired_mae_delta_bootstrap95": paired_interval,
+        "leave_one_season_out_delta_range": leave_one_season_out,
         "warnings": warnings,
     }
 
@@ -267,6 +337,21 @@ def multiseason_markdown(summary):
         f"{fmt(summary['pooled_mae_delta'])}. "
         "Negative indicates a smaller historical error for the "
         "team-adjusted method on included windows only.",
+        "",
+        f"**Paired held-out match bootstrap 95% interval for MAE delta:** "
+        + (
+            f"[{fmt(summary['paired_mae_delta_bootstrap95'][0])}, "
+            f"{fmt(summary['paired_mae_delta_bootstrap95'][1])}]"
+            if summary['paired_mae_delta_bootstrap95'] is not None
+            else "Unavailable"
+        ),
+        "**Leave-one-held-out-season-out MAE delta range:** "
+        + (
+            f"[{fmt(summary['leave_one_season_out_delta_range'][0])}, "
+            f"{fmt(summary['leave_one_season_out_delta_range'][1])}]"
+            if summary['leave_one_season_out_delta_range'] is not None
+            else "Unavailable"
+        ),
         "",
         "**Distinct source match IDs (football-data.org):** "
         + (", ".join(str(x) for x in summary["heldout_match_ids"])
