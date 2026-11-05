@@ -24,9 +24,11 @@ st.caption(
     "football-data.org results before linking their statistics."
 )
 st.warning(
-    "Candidate links are NOT verified. The imported Sportmonks records "
-    "do not currently save final scores. Compare the final score in "
-    "both original sources before manually confirming a candidate."
+    "Candidate links are NOT automatically approved. Newly imported or "
+    "refreshed regular-time Sportmonks fixtures can contain stored "
+    "CURRENT final-score evidence. Any conflicting source score blocks "
+    "review. Manual confirmation still requires checking both original "
+    "provider records, even when stored scores agree."
 )
 
 DB_PATH = Path(__file__).resolve().parent.parent / "football.db"
@@ -53,14 +55,15 @@ if not rows:
 
 counts = {
     key: sum(r["status"] == key for r in rows)
-    for key in ("reviewed", "review_candidate", "ambiguous",
-                "unmatched", "stale_review")
+    for key in ("reviewed", "review_candidate", "score_mismatch",
+                "ambiguous", "unmatched", "stale_review")
 }
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("Operator-reviewed", counts["reviewed"])
 c2.metric("Review candidates", counts["review_candidate"])
-c3.metric("Ambiguous", counts["ambiguous"])
-c4.metric("Unmatched / stale", counts["unmatched"]+counts["stale_review"])
+c3.metric("Score mismatches", counts["score_mismatch"])
+c4.metric("Ambiguous", counts["ambiguous"])
+c5.metric("Unmatched / stale", counts["unmatched"]+counts["stale_review"])
 
 status = st.multiselect(
     "Show link statuses",
@@ -87,15 +90,17 @@ st.subheader("Manual confirmation process")
 st.markdown(
     "1. Find a **review_candidate** row with two IDs and identical "
     "home/away teams, league, and a matching kickoff.\n"
-    "2. Check **both original provider match pages** yourself. Confirm "
-    "the final scores match as well as both team identities and the "
-    "fixture date. The database cannot check Sportmonks' final score yet.\n"
+    "2. Compare **both original provider match pages** yourself. Inspect "
+    "the stored score comparison, when present. A mismatch blocks "
+    "approval; an agreement supports but does NOT replace manual "
+    "source review. Older fixtures may require a refresh to make "
+    "the source score available locally.\n"
     "3. Open GitHub Actions > **Confirm Reviewed Historical Fixture Link**. "
     "Enter the corresponding Sportmonks and football-data.org IDs and "
     "explicitly attest that you compared both final scores.\n"
     "4. When the GitHub Action saves the link and your Streamlit app "
     "refreshes its database, the status should change to **reviewed**.\n"
-    "5. Do not confirm ambiguous or unmatched rows."
+    "5. Do not confirm **score_mismatch**, ambiguous, unmatched or stale rows."
 )
 st.info(
     "The dashboard never writes to football.db. GitHub Actions performs "
