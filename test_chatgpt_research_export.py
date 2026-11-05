@@ -215,6 +215,18 @@ class ExportTests(unittest.TestCase):
         self.assertIn("no_imported_candidate", md)
         self.assertIn("not all fixtures that", md.lower())
 
+    def test_advanced_historical_context_section_is_exported(self):
+        report = self.make()
+        md = report["markdown"]
+        self.assertIn(
+            "Part A.5: Advanced Retrospective Research Diagnostics", md
+        )
+        self.assertIn("Opponent-context descriptive comparisons", md)
+        self.assertIn("Reviewed historical xG diagnostic splits", md)
+        self.assertIn("Stored valid league matches", md)
+        self.assertEqual(report["opponent_context_matches"], 0)
+        self.assertIn("Unavailable", md)
+
     def test_no_external_api_is_required(self):
         export = self.make()
         self.assertIn(
