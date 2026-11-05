@@ -227,6 +227,19 @@ class ExportTests(unittest.TestCase):
         self.assertEqual(report["opponent_context_matches"], 0)
         self.assertIn("Unavailable", md)
 
+    def test_statistical_history_and_sample_uncertainty_export(self):
+        pack = self.make()
+        md = pack["markdown"]
+        self.assertIn(
+            "Part A.6: Statistical Research and Sample Uncertainty", md
+        )
+        self.assertIn("Historical statistical research and uncertainty", md)
+        self.assertIn("Historical last-five form", md)
+        self.assertIn("Home-win Wilson 95% interval", md)
+        self.assertEqual(pack["historical_form_matches"], 0)
+        self.assertFalse(pack["xg_bootstrap_available"])
+        self.assertIn("Bootstrap 95% interval (match resampling)", md)
+
     def test_no_external_api_is_required(self):
         export = self.make()
         self.assertIn(
