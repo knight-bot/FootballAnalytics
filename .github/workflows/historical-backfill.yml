@@ -66,6 +66,11 @@ jobs:
           else
             echo "No new historical fixtures saved."
           fi
+      - name: Summarize imported historical evidence and review queue
+        run: |
+          python audit_history_cli.py
+          python historical_quality_cli.py
+
       - name: Report partial errors after saving valid records
         run: |
           python - <<'PY'
