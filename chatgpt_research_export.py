@@ -12,6 +12,10 @@ from historical_advanced_research import (
     season_sample_balance, opponent_context,
     historical_xg_diagnostics, advanced_markdown,
 )
+from historical_statistical_research import (
+    recorded_season_statistics, historical_season_comparison,
+    reviewed_xg_sensitivity, statistical_research_markdown,
+)
 from historical_evidence import team_evidence
 from historical_reports import (
     build_sportmonks_report,
@@ -87,6 +91,13 @@ def build_chatgpt_research_pack(
     sample_balance = season_sample_balance(conn, competition, season_start)
     opponent_research = opponent_context(conn, competition, season_start, team)
     xg_diagnostics = historical_xg_diagnostics(xg_review)
+    statistical_season = recorded_season_statistics(
+        conn, competition, season_start, team
+    )
+    historical_seasons = historical_season_comparison(
+        conn, competition, season_start, years=4
+    )
+    reviewed_xg_uncertainty = reviewed_xg_sensitivity(xg_review)
     reviewed_links = reviewed_links_for_team(
         conn, competition, season_start, team,
     )
@@ -232,6 +243,12 @@ def build_chatgpt_research_pack(
             sample_balance, opponent_research, xg_diagnostics
         ).strip(),
         "",
+        "## Part A.6: Statistical Research and Sample Uncertainty",
+        "",
+        statistical_research_markdown(
+            statistical_season, historical_seasons, reviewed_xg_uncertainty,
+        ).strip(),
+        "",
         "## Part B: Independent Sportmonks Historical Case Studies",
         "",
         "The following are **separately selected historical fixtures**. They "
@@ -346,4 +363,8 @@ def build_chatgpt_research_pack(
         "reviewed_xg_count": xg_review["xg_complete_links"],
         "stored_coverage_count": linkage_coverage["valid_finished_rows"],
         "opponent_context_matches": opponent_research["matched_context_count"],
+        "historical_form_matches": statistical_season["form_rows_available"],
+        "xg_bootstrap_available": (
+            reviewed_xg_uncertainty["bootstrap_mean_difference95"] is not None
+        ),
     }
