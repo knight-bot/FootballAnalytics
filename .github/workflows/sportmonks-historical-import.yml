@@ -36,16 +36,19 @@ jobs:
         run: |
           python -m py_compile sportmonks_historical_import.py
           python -m py_compile historical_audit.py historical_reports.py
+          python -m py_compile historical_evidence.py historical_ai.py
           python -m py_compile pages/3_Sportmonks_Historical_Stats.py
           python -m py_compile pages/4_Historical_Data_Audit.py
           python -m py_compile pages/5_Historical_Research_Reports.py
+          python -m py_compile pages/6_Historical_Evidence_Research.py
 
-      - name: Run offline integrity and research report tests
+      - name: Run offline historical research integrity tests
         run: |
           python -m unittest -q \
             test_sportmonks_historical_import.py \
             test_historical_audit.py \
-            test_historical_reports.py
+            test_historical_reports.py \
+            test_historical_evidence_ai.py
 
       - name: Import completed historical fixtures
         env:
