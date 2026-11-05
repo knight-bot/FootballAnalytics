@@ -135,6 +135,37 @@ class BackfillTests(unittest.TestCase):
         self.assertIn("Error after checkpoint",backfill_markdown(report))
         self.assertNotIn("dummy",report["error"])
 
+    def test_later_fixture_error_preserves_prior_committed_fixture(self):
+        data = [
+            {"id":101, "state_id":5, "league_id":8,
+             "starting_at":"2025-09-13 15:00:00"},
+            {"id":104, "state_id":5, "league_id":8,
+             "starting_at":"2025-09-14 13:00:00"},
+        ]
+        class LateFailure(FakeSession):
+            def get(self,url,**kw):
+                if url.endswith("/104"):
+                    raise RuntimeError("synthetic later fixture failure")
+                return super().get(url,**kw)
+        report=run_backfill(
+            LateFailure(pages=[data]),"dummy",self.db,
+            config(start="2025-09-13",end="2025-09-14")
+        )
+        self.assertTrue(report["has_error"])
+        self.assertEqual(report["partial_saved_on_error"],1)
+        self.assertEqual(report["newly_imported"],1)
+        self.assertEqual(report["windows_completed"],0)
+        self.assertEqual(self.db.execute(
+            "SELECT fixture_id FROM sportmonks_historical_fixtures"
+        ).fetchall(),[(101,)])
+        resumed=run_backfill(
+            FakeSession(pages=[data]),"dummy",self.db,
+            config(start="2025-09-13",end="2025-09-14")
+        )
+        self.assertFalse(resumed["has_error"])
+        self.assertEqual(resumed["newly_imported"],1)
+        self.assertTrue(resumed["complete_requested_range"])
+
     def test_empty_range_has_no_fabricated_imports(self):
         report=run_backfill(
             FakeSession(pages=[[]]),"dummy",self.db,
