@@ -8,7 +8,7 @@ from datetime import date
 
 from historical_backfill import (
     MAX_RANGE_DAYS, backfill_markdown, historical_windows,
-    parse_backfill_config, run_backfill,
+    parse_backfill_config, run_backfill, safe_import_failure,
 )
 from test_sportmonks_historical_batch import FakeSession
 
@@ -165,6 +165,24 @@ class BackfillTests(unittest.TestCase):
         self.assertFalse(resumed["has_error"])
         self.assertEqual(resumed["newly_imported"],1)
         self.assertTrue(resumed["complete_requested_range"])
+
+    def test_safe_error_category_preserves_status_but_not_sensitive_payload(self):
+        cases = [
+            (RuntimeError("Historical discovery failed with HTTP 403. Check API permissions or rate limits; no tokens were logged."), "HTTP 403"),
+            (RuntimeError("Historical discovery failed with HTTP 401. Check subscription."), "HTTP 401"),
+            (RuntimeError("Historical discovery failed with HTTP 429."), "HTTP 429"),
+            (RuntimeError("Incomplete discovery response; refusing to assume all historical pages were retrieved."), "omitted required data"),
+            (RuntimeError("Discovery exceeds the page safety limit."), "shorter date window"),
+            (RuntimeError("Could not access Sportmonks discovery endpoint."), "Network error"),
+        ]
+        for exc, expected in cases:
+            with self.subTest(message=str(exc)):
+                self.assertIn(expected, safe_import_failure(exc))
+        text = safe_import_failure(RuntimeError(
+            "provider x?token=SECRET&password=SECRET"
+        ))
+        self.assertNotIn("SECRET", text)
+        self.assertIn("Unexpected historical import failure", text)
 
     def test_rate_limit_is_reported_without_credentials(self):
         class RateLimitedSession(FakeSession):
