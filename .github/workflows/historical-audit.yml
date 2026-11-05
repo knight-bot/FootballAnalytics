@@ -31,6 +31,7 @@ jobs:
           python -m py_compile historical_team_strength.py pages/9_Historical_Team_Strength.py
           python -m py_compile historical_model_benchmark.py pages/10_Historical_Model_Benchmark.py
           python -m py_compile historical_multiseason_benchmark.py pages/11_Multi_Season_Historical_Evaluation.py
+          python -m py_compile historical_xg_analysis.py pages/12_Historical_xG_Analysis.py
           python -m py_compile pages/8_Historical_Fixture_Link_Review.py
           python -m py_compile pages/7_ChatGPT_Research_Export.py
           python -m py_compile pages/4_Historical_Data_Audit.py
@@ -49,7 +50,8 @@ jobs:
             test_historical_fixture_linkage.py \
             test_historical_team_strength.py \
             test_historical_model_benchmark.py \
-            test_historical_multiseason_benchmark.py
+            test_historical_multiseason_benchmark.py \
+            test_historical_xg_analysis.py
 
       - name: Summarize historical data quality
         run: python audit_history_cli.py
