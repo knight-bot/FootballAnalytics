@@ -1,0 +1,61 @@
+name: Confirm Reviewed Historical Fixture Link
+
+on:
+  workflow_dispatch:
+    inputs:
+      sportmonks_fixture_id:
+        description: "Existing completed Sportmonks fixture ID"
+        required: true
+        type: string
+      football_data_match_id:
+        description: "Matching football-data.org result match ID"
+        required: true
+        type: string
+      scores_compared:
+        description: "I checked both original providers and confirmed identical teams, dates, and final scores"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: football-database-update
+  cancel-in-progress: false
+
+jobs:
+  confirm_reviewed_link:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify linkage code and offline tests
+        run: |
+          python -m py_compile historical_fixture_linkage.py confirm_historical_link.py
+          python -m unittest -q test_historical_fixture_linkage.py
+
+      - name: Confirm one human-reviewed historical link
+        env:
+          SPORTMONKS_FIXTURE_ID: ${{ inputs.sportmonks_fixture_id }}
+          FOOTBALL_DATA_MATCH_ID: ${{ inputs.football_data_match_id }}
+          HISTORICAL_SCORE_CHECKED: ${{ inputs.scores_compared && 'YES_I_COMPARED_BOTH_SCORES' || 'NO' }}
+        run: python confirm_historical_link.py
+
+      - name: Save reviewed link table
+        run: |
+          if [ -n "$(git status --porcelain football.db)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add football.db
+            git commit -m "Record operator-reviewed historical fixture link"
+            git push
+          else
+            echo "Historical fixture link was already reviewed; no change."
+          fi
