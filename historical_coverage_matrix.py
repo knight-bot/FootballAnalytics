@@ -7,7 +7,7 @@ coverage of LOCALLY STORED completed results, not a whole provider season.
 from collections import Counter
 
 from historical_audit import table_exists
-from historical_fixture_linkage import candidate_links, LINK_TABLE
+from historical_fixture_linkage import candidate_links, LINK_TABLE, _exists
 from historical_reports import _bounds, season_label
 from historical_team_strength import _valid_result
 from historical_xg_analysis import _standard_xg_by_fixture
