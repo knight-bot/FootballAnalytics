@@ -1,14 +1,18 @@
 """Conservative, read-only historical cross-provider match candidate matching.
 
-The locally imported Sportmonks records do NOT store final score values.
-Matching names and kickoffs produces review *candidates*, never automatic
-score-verified links. Confirmation occurs in a separate, explicit workflow.
+Older imported Sportmonks records do not have persisted final scores.
+Newer/explicitly refreshed regular-time fixtures may have strict CURRENT
+score evidence. Score agreement can corroborate, but can NEVER automatically
+approve a provider association. Conflicting source scores block review.
+Confirmation occurs in a separate, explicit operator workflow.
 No network, odds, future fixtures, or writes occur in this module.
 """
 from collections import Counter
 from datetime import datetime, timezone
 import re
 import unicodedata
+
+from historical_score_evidence import stored_final_scores, compare_stored_score
 
 FINISHED_STATES = (5, 7, 8)
 MAX_TIME_DIFFERENCE_MINUTES = 120
@@ -113,6 +117,7 @@ def candidate_links(conn):
                 "home": home, "away": away,
                 "home_norm": home_norm, "away_norm": away_norm,
                 "score": f"{hg}-{ag}",
+                "home_goals": hg, "away_goals": ag,
             })
 
     members = {}
@@ -146,6 +151,11 @@ def candidate_links(conn):
             "result_match": "",
             "result_date": "",
             "result_score": "",
+            "sportmonks_stored_final_score": (
+                f"{source_scores[sid][0]}-{source_scores[sid][1]}"
+                if sid in source_scores else ""
+            ),
+            "score_comparison": "unavailable",
             "kickoff_difference_minutes": None,
             "status": "unmatched",
             "reason": "",
@@ -182,6 +192,7 @@ def candidate_links(conn):
         for _, candidate in options
     )
     reviewed = _get_reviewed(conn)
+    source_scores = stored_final_scores(conn)
     rows = []
     for row, options in provisional:
         reviewed_link = reviewed.get(row["sportmonks_id"])
@@ -192,17 +203,34 @@ def candidate_links(conn):
             row["result_date"] = result["kickoff"].isoformat()
             row["result_score"] = result["score"]
             row["kickoff_difference_minutes"] = round(delta, 1)
+            row["score_comparison"] = compare_stored_score(
+                source_scores.get(sid),
+                result["home_goals"], result["away_goals"],
+            )
             if len(options) != 1 or usage[result["match_id"]] != 1:
                 row["status"] = "ambiguous"
                 row["reason"] = (
                     "More than one plausible record exists. "
                     "Do not confirm a link."
                 )
+            elif row["score_comparison"] == "mismatch":
+                row["status"] = "score_mismatch"
+                row["reason"] = (
+                    "BLOCKED: stored Sportmonks CURRENT final score conflicts "
+                    "with football-data.org final result. Investigate "
+                    "source records; do not approve this association."
+                )
             else:
                 row["status"] = "review_candidate"
                 row["reason"] = (
-                    "Teams, league and kickoff agree. Sportmonks final "
-                    "score was not stored: manually compare source scores."
+                    "Teams, league and kickoff agree. "
+                    + (
+                        "Stored Sportmonks CURRENT score also agrees, "
+                        "but manually compare source scores before approval."
+                        if row["score_comparison"] == "agrees"
+                        else "Sportmonks final score was not stored: "
+                        "manually compare source scores."
+                    )
                 )
         elif not row["reason"]:
             row["reason"] = (
