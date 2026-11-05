@@ -107,12 +107,41 @@ def discover_completed(session, token, config):
             body = response.json()
         except ValueError:
             raise RuntimeError("Sportmonks discovery returned invalid JSON.") from None
+        if not isinstance(body, dict):
+            raise RuntimeError(
+                "Historical discovery returned an unexpected JSON root; "
+                "a response object is required."
+            )
+        if body.get("error") or body.get("errors"):
+            raise RuntimeError(
+                "Historical discovery returned provider errors inside "
+                "an HTTP-success response. Check subscription access."
+            )
         data = body.get("data")
         pagination = body.get("pagination")
-        if not isinstance(data, list) or not isinstance(pagination, dict):
+        if not isinstance(data, list):
+            # Never mistake a malformed response or an error envelope
+            # for an empty result from the league/date query.
             raise RuntimeError(
-                "Incomplete discovery response; refusing to assume all "
-                "historical pages were retrieved."
+                "Incomplete discovery response: missing fixture data list. "
+                "No historical coverage was established."
+            )
+        if pagination is None and page == 1 and not data:
+            # Some API responses with no matching fixtures contain
+            # {data: []} but omit pagination. This is safe only for
+            # the FIRST page of an explicitly empty result: there are
+            # no fixtures to paginate, and no results can be skipped.
+            # This does NOT certify official-season coverage.
+            print(
+                f"Historical discovery {start} through {end}: "
+                "explicit empty fixture list with no pagination; "
+                "skipping this window."
+            )
+            return []
+        if not isinstance(pagination, dict):
+            raise RuntimeError(
+                "Incomplete discovery response: nonempty fixture data "
+                "without pagination; refusing to assume full coverage."
             )
         for item in data:
             if not isinstance(item, dict):
