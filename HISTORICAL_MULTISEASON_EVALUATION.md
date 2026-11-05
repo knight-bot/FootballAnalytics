@@ -1,5 +1,14 @@
 # Multi-season retrospective model evaluation
 
+## Robustness extensions
+
+The dashboard and Markdown report now include (a) a deterministic
+match-paired 95% bootstrap sensitivity interval for the historical
+MAE difference when at least 50 held-out matches exist, and
+(b) a leave-one-season-out MAE-delta range when at least three held-out
+seasons are eligible. Neither should be interpreted as future accuracy.
+See [Statistical Historical Research](HISTORICAL_STATISTICAL_RESEARCH.md).
+
 The **Multi-Season Historical Evaluation** Streamlit page expands the
 single-holdout model audit into rolling-origin historical tests over
 multiple completed seasons.
