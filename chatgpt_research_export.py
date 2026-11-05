@@ -4,6 +4,7 @@ Uses only the local completed-match SQLite database. No API requests,
 credentials, future-match analysis, or cross-provider fixture ID joins.
 """
 from historical_audit import audit_database
+from research_readiness import assess_research_readiness, readiness_markdown
 from historical_fixture_linkage import reviewed_links_for_team
 from historical_team_strength import analyze_season, strength_markdown
 from historical_xg_analysis import analyze_team_xg, team_xg_markdown
@@ -85,6 +86,7 @@ def build_chatgpt_research_pack(
     )
     evidence = team_evidence(conn, competition, season_start, team)
     audit = audit_database(conn)
+    readiness = assess_research_readiness(conn)
     strength = analyze_season(conn, competition, season_start)
     xg_review = analyze_team_xg(conn, competition, season_start, team)
     linkage_coverage = coverage_matrix(conn, competition, season_start, team)
@@ -144,6 +146,8 @@ def build_chatgpt_research_pack(
         f"{audit['results_count']}",
         f"- Invalid completed results detected in entire database: "
         f"{audit['invalid_result_rows']}",
+        "",
+        readiness_markdown(readiness).strip(),
         "",
         "## Part A: Recorded Team Performance",
         "",
@@ -353,12 +357,56 @@ def build_chatgpt_research_pack(
         "",
     ])
 
+    manifest = {
+        "schema_version": "1.0",
+        "purpose": "retrospective_historical_evidence",
+        "scope": {
+            "competition": competition,
+            "season": season_label(season_start),
+            "team": team,
+        },
+        "source_status": {
+            "stored_completed_results": readiness["stored_completed_results"],
+            "invalid_results": readiness["invalid_results"],
+            "operator_reviewed_links_database": readiness["reviewed_source_links"],
+            "reviewed_two_sided_xg_database": readiness["reviewed_two_sided_xg"],
+            "selected_team_reviewed_links": len(reviewed_links),
+            "selected_team_xg_complete": xg_review["xg_complete_links"],
+            "reviewed_xg_sample_status": readiness["xg_status"],
+        },
+        "source_ids": {
+            "recorded_team_match_ids": sorted(
+                row["match_id"] for row in linkage_coverage["rows"]
+            ),
+            "operator_reviewed_cross_provider_links": [
+                {
+                    "football_data_match_id": row["match_id"],
+                    "sportmonks_fixture_id": row["sportmonks_id"],
+                }
+                for row in reviewed_links
+            ],
+            "reviewed_team_xg_match_ids": sorted(
+                row["match_id"] for row in xg_review["match_rows"]
+            ),
+            "independent_sportmonks_case_study_ids": selected,
+        },
+        "interpretation_limits": [
+            "Stored completed results do not prove official season coverage.",
+            "Unreviewed Sportmonks fixtures are independent case studies.",
+            "Only currently operator-reviewed associations can be joined.",
+            "Missing xG is unknown, not zero.",
+            "This report does not analyze upcoming fixtures.",
+        ],
+    }
+
     return {
         "markdown": "\n".join(section),
         "team_match_count": team_report["summary"].get("played", 0),
         "sportmonks_fixture_count": len(selected),
         "audit_warning_count": len(warnings),
         "fixture_ids": selected,
+        "manifest": manifest,
+        "readiness": readiness,
         "reviewed_link_count": len(reviewed_links),
         "reviewed_xg_count": xg_review["xg_complete_links"],
         "stored_coverage_count": linkage_coverage["valid_finished_rows"],
