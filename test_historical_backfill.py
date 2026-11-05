@@ -62,6 +62,50 @@ class BackfillTests(unittest.TestCase):
                         "BACKFILL_MAX_FIXTURES": cap,
                     }, today=date(2026, 11, 6))
 
+    def test_no_fixtures_before_season_then_imports_next_window(self):
+        # The Premier League began on 2025-08-15, so the preceding
+        # 2025-08-01..14 window can legitimately have zero league games.
+        from test_sportmonks_historical_batch import FakeResponse
+
+        class FirstWindowEmpty(FakeSession):
+            def get(self, url, *, params=None, headers=None, timeout=None):
+                if "/between/2025-08-01/2025-08-14" in url:
+                    return FakeResponse({"data": []})
+                if "/between/2025-08-15/2025-08-28" in url:
+                    return FakeResponse({
+                        "data": [{
+                            "id": 101, "state_id": 5, "league_id": 8,
+                            "starting_at": "2025-08-15 19:00:00",
+                        }],
+                        "pagination": {
+                            "current_page": 1, "has_more": False,
+                        },
+                    })
+                response = super().get(
+                    url, params=params, headers=headers, timeout=timeout
+                )
+                if isinstance(response.payload, dict) and isinstance(
+                    response.payload.get("data"), dict
+                ):
+                    response.payload["data"]["starting_at"] = (
+                        "2025-08-15 19:00:00"
+                    )
+                return response
+
+        report = run_backfill(
+            FirstWindowEmpty(), "dummy_token", self.db,
+            config(start="2025-08-01", end="2025-08-28", budget=10),
+        )
+        self.assertFalse(report["has_error"])
+        self.assertTrue(report["complete_requested_range"])
+        self.assertEqual(report["windows_completed"], 2)
+        self.assertEqual(report["enrichment_requests"], 1)
+        self.assertEqual(report["newly_imported"], 1)
+        self.assertEqual(
+            [(x["discovered"], x["imported"]) for x in report["windows"]],
+            [(0, 0), (1, 1)],
+        )
+
     def test_one_window_stores_and_then_skips_same_ids(self):
         # Synthetic fixtures within the first window.
         rows = [
