@@ -4,13 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       start_date:
-        description: "First historical day (YYYY-MM-DD)"
+        description: "First historical day (YYYY-MM-DD, first 2025/26 match Aug 15)"
         required: true
         type: string
+        default: "2025-08-15"
       end_date:
         description: "Last historical day (up to 84 days, at least 14 days old)"
         required: true
         type: string
+        default: "2025-08-28"
       max_fixtures:
         description: "Maximum completed fixtures to enrich per run"
         type: choice
