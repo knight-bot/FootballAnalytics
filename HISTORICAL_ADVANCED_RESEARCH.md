@@ -1,5 +1,14 @@
 # Advanced retrospective football research
 
+## Statistical research extension
+
+The existing Historical xG Analysis page and ChatGPT Research Export now
+include source-backed last-five completed-match form, historical league
+outcome frequencies, cross-season scoring comparisons, and explicit
+uncertainty safeguards. The multi-season benchmark also reports
+match-paired error uncertainty and leave-one-year-out sensitivity.
+See [Statistical Historical Research](HISTORICAL_STATISTICAL_RESEARCH.md).
+
 The **Historical xG Analysis** page now includes three additional
 historical research diagnostics. The consolidated **ChatGPT Research
 Export** includes the same calculations in **Part A.5**. Both read
