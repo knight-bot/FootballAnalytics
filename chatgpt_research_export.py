@@ -6,6 +6,7 @@ credentials, future-match analysis, or cross-provider fixture ID joins.
 from historical_audit import audit_database
 from historical_fixture_linkage import reviewed_links_for_team
 from historical_team_strength import analyze_season, strength_markdown
+from historical_xg_analysis import analyze_team_xg, team_xg_markdown
 from historical_evidence import team_evidence
 from historical_reports import (
     build_sportmonks_report,
@@ -76,6 +77,7 @@ def build_chatgpt_research_pack(
     evidence = team_evidence(conn, competition, season_start, team)
     audit = audit_database(conn)
     strength = analyze_season(conn, competition, season_start)
+    xg_review = analyze_team_xg(conn, competition, season_start, team)
     reviewed_links = reviewed_links_for_team(
         conn, competition, season_start, team,
     )
@@ -207,6 +209,10 @@ def build_chatgpt_research_pack(
         "",
         strength_markdown(strength, team).strip(),
         "",
+        "## Part A.3: Reviewed Historical xG Evidence",
+        "",
+        team_xg_markdown(xg_review).strip(),
+        "",
         "## Part B: Independent Sportmonks Historical Case Studies",
         "",
         "The following are **separately selected historical fixtures**. They "
@@ -316,4 +322,5 @@ def build_chatgpt_research_pack(
         "audit_warning_count": len(warnings),
         "fixture_ids": selected,
         "reviewed_link_count": len(reviewed_links),
+        "reviewed_xg_count": xg_review["xg_complete_links"],
     }
