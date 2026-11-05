@@ -7,6 +7,15 @@ Sportmonks tables within football.db.
 It is intended for retrospective football research. It does not fetch live or
 upcoming matches, create future forecasts, or use odds.
 
+## Gap-driven historical date selection
+
+For an evidence-backed choice of historical import dates, first open
+**Historical Import Gap Planner** in the Streamlit dashboard. It uses
+the local completed-match coverage audit to propose bounded date
+windows where stored results still lack imported Sportmonks candidates.
+It does not run API requests or automatically establish provider links.
+See [Historical Import Gap Planner](HISTORICAL_IMPORT_GAP_PLANNER.md).
+
 ## How to run
 
 1. In GitHub, open **Actions**.
