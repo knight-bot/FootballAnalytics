@@ -16,6 +16,7 @@ LINK_STATUSES = (
     "reviewed_complete_xg",
     "reviewed_missing_xg",
     "review_candidate",
+    "score_mismatch",
     "ambiguous",
     "stale_review",
     "no_imported_candidate",
@@ -89,6 +90,8 @@ def coverage_matrix(conn, competition, season_start, team=None):
         elif (int(mid) in stale_review_match_ids
               or any(r["status"] == "stale_review" for r in matching)):
             status = "stale_review"
+        elif any(r["status"] == "score_mismatch" for r in matching):
+            status = "score_mismatch"
         elif len(matching) == 1 and matching[0]["status"] == "review_candidate":
             chosen = matching[0]
             status = "review_candidate"
@@ -106,6 +109,14 @@ def coverage_matrix(conn, competition, season_start, team=None):
             "home_goals": int(hg),
             "away_goals": int(ag),
             "coverage_status": status,
+            "stored_score_comparison": (
+                chosen["score_comparison"] if chosen else (
+                    "mismatch" if status == "score_mismatch" else "unavailable"
+                )
+            ),
+            "stored_sportmonks_final_score": (
+                chosen["sportmonks_stored_final_score"] if chosen else ""
+            ),
             # Candidate IDs may be displayed, but never treated as joined.
             "review_candidate_sportmonks_id": (
                 sid if status == "review_candidate" else None
@@ -129,6 +140,9 @@ def coverage_matrix(conn, competition, season_start, team=None):
         "independently score-verified by the application.",
         "A candidate is not an established link. Unreviewed fixture "
         "metrics are never attached to a football-data.org result.",
+        "Stored Sportmonks final-score disagreement blocks a new review; "
+        "a previously reviewed link with conflicting source scores "
+        "becomes stale. Score agreement alone never approves a link.",
         "A missing metric is unknown, not zero; xG is available here "
         "only for a currently reviewed match with unambiguous standard "
         "xG for BOTH sides.",
@@ -195,8 +209,9 @@ def coverage_markdown(result):
         "### Match-by-match coverage (football-data.org IDs)",
         "",
         "| Date | Home | Away | Source match ID | Status | "
-        "Reviewed Sportmonks ID | Standard xG home | Standard xG away |",
-        "|---|---|---|---:|---|---:|---:|---:|",
+        "Stored score comparison | Reviewed Sportmonks ID | "
+        "Standard xG home | Standard xG away |",
+        "|---|---|---|---:|---|---|---:|---:|---:|",
     ])
     for item in result["rows"]:
         def safe(s):
@@ -209,6 +224,7 @@ def coverage_markdown(result):
             f"| {item['date']} | {safe(item['home_team'])} | "
             f"{safe(item['away_team'])} | {item['match_id']} | "
             f"{item['coverage_status']} | "
+            f"{item['stored_score_comparison']} | "
             f"{item['reviewed_sportmonks_id'] or 'None'} | {h} | {a} |"
         )
     lines.extend(["", "### Interpretation safeguards", ""])
