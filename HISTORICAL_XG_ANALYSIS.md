@@ -44,8 +44,9 @@ for the methodology and interpretation limits.
 - Each such link was approved through a manual GitHub Actions
   confirmation, after an operator attested that the original provider
   records agree on the final score. This remains **operator-attested**,
-  not independently machine-verified, because the older importer did
-  not persist Sportmonks' final score.
+  not automatically approved. Strictly stored regular-time Sportmonks
+  `CURRENT` scores can now be compared to the other source after a
+  controlled refresh, but operator confirmation remains required.
 - A link that has become \`stale_review\` or \`ambiguous\` will not
   contribute to xG totals.
 
