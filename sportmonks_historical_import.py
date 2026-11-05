@@ -12,6 +12,8 @@ from pathlib import Path
 
 import requests
 
+from historical_score_evidence import ensure_score_schema, replace_score_evidence
+
 API_URL = "https://api.sportmonks.com/v3/football/fixtures"
 DB_PATH = Path(__file__).resolve().parent / "football.db"
 FINISHED_STATES = {5, 7, 8}  # FT, AET, FT_PEN (Sportmonks v3)
@@ -91,6 +93,7 @@ def ensure_schema(conn):
             PRIMARY KEY (fixture_id, participant_id, minute)
         );
     """)
+    ensure_score_schema(conn)
 
 
 def normalized_value(item):
@@ -262,11 +265,16 @@ def store_finished_fixture(conn, fixture):
               (fixture_id, participant_id, name, location)
             VALUES (?, ?, ?, ?)
         """, teams)
+        # The strict CURRENT final-score evidence is stored independently
+        # and replaced fail-closed when the API response is ambiguous.
+        final_score = replace_score_evidence(conn, fixture)
 
     print(
         f"Fixture {fixture_id}: saved {len(metrics)} xG-related metrics, "
         f"{len(stat_rows)} numeric match-statistic values, "
-        f"{len(pressure_rows)} minute-level Pressure Index values."
+        f"{len(pressure_rows)} minute-level Pressure Index values; "
+        f"source final-score evidence: "
+        f"{f'{final_score[0]}-{final_score[1]}' if final_score is not None else 'unavailable'}."
     )
     return True
 
