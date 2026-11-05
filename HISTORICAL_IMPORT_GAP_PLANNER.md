@@ -39,7 +39,8 @@ planning update does **not** run the API importer itself.
    - **Old results missing candidates:** possible new historical imports
    - **Candidates requiring review:** source records already discovered,
      requiring manual final-score comparison
-   - **Ambiguous or stale:** manual source investigation needed
+   - **Score conflicts, ambiguous or stale:** manual source investigation
+     needed; conflicting matches cannot be confirmed
    - **Reviewed but missing xG:** inspect Sportmonks coverage or import
      completeness; refreshing may not create unavailable xG
 4. Copy a suggested start/end date window into the existing manual
@@ -61,10 +62,10 @@ other completed league fixtures in the same dates.
 
 ## Why no automatic matching or scheduled historical import?
 
-Provider IDs differ. The importer currently stores only how many
-Sportmonks score records it received, not the final score itself.
-Automatically joining names and timestamps without checking the
-actual score would contaminate the resulting analysis.
+Provider IDs differ. The upgraded importer can preserve unambiguous
+historical `CURRENT` full-time scores and flag conflicts, but a
+name/date/score match is not proof that every recorded metric is correct.
+Manual approval and source audit remain necessary.
 
 This phase therefore leaves both importing and match verification
 manual. No new API secrets or paid OpenAI API subscription are needed
