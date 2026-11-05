@@ -132,10 +132,11 @@ except (ValueError, sqlite3.Error) as exc:
     st.error(f"Unable to generate report: {exc}")
     st.stop()
 
-c1, c2, c3 = st.columns(3)
+c1, c2, c3, c4 = st.columns(4)
 c1.metric("Recorded team matches", pack["team_match_count"])
-c2.metric("Separate Sportmonks case studies", pack["sportmonks_fixture_count"])
-c3.metric("Selected fixture audit flags", pack["audit_warning_count"])
+c2.metric("Operator-reviewed linked fixtures", pack["reviewed_link_count"])
+c3.metric("Separate Sportmonks case studies", pack["sportmonks_fixture_count"])
+c4.metric("Selected fixture audit flags", pack["audit_warning_count"])
 
 st.download_button(
     "Download ChatGPT research report (.md)",
@@ -157,7 +158,8 @@ with st.expander("Preview report and source IDs"):
     )
 
 st.warning(
-    "Source IDs remain separate. The presence of a Sportmonks fixture "
-    "does not prove it belongs to the selected football-data.org team. "
-    "Do not treat this limited historical sample as full league coverage."
+    "Only manually operator-reviewed associations listed in Part A.1 "
+    "are linked to the selected team's results. Independently selected "
+    "Sportmonks fixtures remain unrelated case studies. "
+    "All coverage is limited to the stored historical sample."
 )
