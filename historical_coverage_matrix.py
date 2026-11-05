@@ -7,7 +7,7 @@ coverage of LOCALLY STORED completed results, not a whole provider season.
 from collections import Counter
 
 from historical_audit import table_exists
-from historical_fixture_linkage import candidate_links
+from historical_fixture_linkage import candidate_links, LINK_TABLE
 from historical_reports import _bounds, season_label
 from historical_team_strength import _valid_result
 from historical_xg_analysis import _standard_xg_by_fixture
@@ -57,6 +57,13 @@ def coverage_matrix(conn, competition, season_start, team=None):
         if mid is not None:
             candidates_by_match.setdefault(int(mid), []).append(item)
     xg_by_id = _standard_xg_by_fixture(conn)
+    stale_review_match_ids = set()
+    if _exists(conn, LINK_TABLE):
+        stale_review_match_ids = {
+            int(mid) for (mid,) in conn.execute(
+                f"SELECT football_data_match_id FROM {LINK_TABLE}"
+            )
+        }
     rows = []
 
     for mid, kickoff, home, away, hg, ag in valid:
@@ -79,7 +86,8 @@ def coverage_matrix(conn, competition, season_start, team=None):
                 vals.get("away") is not None
                 else "reviewed_missing_xg"
             )
-        elif any(r["status"] == "stale_review" for r in matching):
+        elif (int(mid) in stale_review_match_ids
+              or any(r["status"] == "stale_review" for r in matching)):
             status = "stale_review"
         elif len(matching) == 1 and matching[0]["status"] == "review_candidate":
             chosen = matching[0]
