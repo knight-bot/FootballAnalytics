@@ -33,6 +33,7 @@ jobs:
           python -m py_compile historical_audit.py audit_history_cli.py
           python -m py_compile historical_reports.py historical_evidence.py historical_ai.py
           python -m py_compile sportmonks_historical_batch.py
+          python -m py_compile historical_score_evidence.py sportmonks_historical_import.py
           python -m py_compile chatgpt_research_export.py
           python -m py_compile historical_fixture_linkage.py confirm_historical_link.py
           python -m py_compile historical_team_strength.py pages/9_Historical_Team_Strength.py
@@ -52,6 +53,7 @@ jobs:
         run: |
           python -m unittest -q \
             test_sportmonks_historical_import.py \
+            test_historical_score_evidence.py \
             test_historical_audit.py \
             test_historical_reports.py \
             test_historical_evidence_ai.py \
