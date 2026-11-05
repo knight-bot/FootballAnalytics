@@ -109,7 +109,7 @@ def plan_historical_imports(
     ]
     manual_resolution = [
         row for row in evidence["rows"]
-        if row["coverage_status"] in ("stale_review", "ambiguous")
+        if row["coverage_status"] in ("stale_review", "ambiguous", "score_mismatch")
     ]
     status_counts = evidence["status_counts"]
     return {
@@ -149,6 +149,8 @@ def plan_historical_imports(
             "Existing reviewed links missing xG need a source coverage "
             "investigation, not an assumption that refreshing will "
             "necessarily recover the data.",
+            "Stored source-score disagreements must be resolved "
+            "manually and never automatically converted into links.",
             "Sportmonks access depends on the user's licensed "
             "subscription and API limits. This planner makes no API calls.",
         ],
