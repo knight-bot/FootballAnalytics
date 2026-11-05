@@ -135,9 +135,9 @@ def coverage_matrix(conn, competition, season_start, team=None):
         "All denominators count VALID COMPLETED MATCHES PRESENT IN THE "
         "LOCAL football-data.org database, not all fixtures that "
         "should exist in an official season.",
-        "Sportmonks does not currently persist final scores. "
-        "A reviewed cross-provider link is operator-attested, not "
-        "independently score-verified by the application.",
+        "Some legacy Sportmonks records lack saved final scores. "
+        "Newer imports may save strict CURRENT score evidence, but "
+        "reviewed cross-provider links remain operator-attested.",
         "A candidate is not an established link. Unreviewed fixture "
         "metrics are never attached to a football-data.org result.",
         "Stored Sportmonks final-score disagreement blocks a new review; "
