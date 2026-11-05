@@ -110,6 +110,10 @@ class ExportTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.make([999999])
 
+    def test_fractional_fixture_id_is_rejected(self):
+        with self.assertRaises(ValueError):
+            self.make([9001.5])
+
     def test_repeated_fixture_ids_are_deduplicated(self):
         export = self.make([9001, 9001])
         self.assertEqual(export["sportmonks_fixture_count"], 1)
