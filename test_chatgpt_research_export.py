@@ -88,7 +88,7 @@ class ExportTests(unittest.TestCase):
         self.assertIn("football-data.org", md)
         self.assertIn("701", md)
         self.assertIn("702", md)
-        self.assertIn("2 goals scored", md)
+        self.assertIn("- Goals scored: 3; goals conceded: 1", md)
         self.assertNotIn("| 705 |", md)
         self.assertNotIn("| 704 |", md)
         self.assertNotIn("| 706 |", md)
