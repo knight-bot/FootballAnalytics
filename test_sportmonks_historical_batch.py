@@ -138,6 +138,78 @@ class BatchDiscoveryTests(unittest.TestCase):
             "api_token" not in call["url"] for call in session.calls
         ))
 
+    def test_empty_first_page_without_pagination_is_valid_empty_window(self):
+        class EmptyWindow:
+            def __init__(self):
+                self.calls = 0
+
+            def get(self, url, **kwargs):
+                self.calls += 1
+                return FakeResponse({"data": [], "subscription": []})
+
+        session = EmptyWindow()
+        self.assertEqual(
+            discover_completed(session, "fake_secret", config()), []
+        )
+        self.assertEqual(session.calls, 1)
+
+    def test_missing_pagination_with_nonempty_data_fails_closed(self):
+        class MissingPage:
+            def get(self, url, **kwargs):
+                return FakeResponse({
+                    "data": [{
+                        "id": 101,
+                        "state_id": 5,
+                        "league_id": 8,
+                        "starting_at": "2025-09-13 15:00:00",
+                    }]
+                })
+
+        with self.assertRaisesRegex(RuntimeError, "without pagination"):
+            discover_completed(MissingPage(), "fake_secret", config())
+
+    def test_error_envelope_is_not_accepted_as_empty_fixtures(self):
+        class ErrorEnvelope:
+            def get(self, url, **kwargs):
+                return FakeResponse({
+                    "data": [], "errors": [{"code": "subscription"}]
+                })
+
+        with self.assertRaisesRegex(RuntimeError, "provider errors"):
+            discover_completed(ErrorEnvelope(), "fake_secret", config())
+
+    def test_missing_data_or_invalid_response_is_not_treated_as_empty(self):
+        class Malformed:
+            def __init__(self, payload):
+                self.payload = payload
+
+            def get(self, url, **kwargs):
+                return FakeResponse(self.payload)
+
+        for response in ({}, {"pagination": None}, {"data": None}, []):
+            with self.subTest(response=response):
+                with self.assertRaises(RuntimeError):
+                    discover_completed(
+                        Malformed(response), "fake_secret", config()
+                    )
+
+    def test_second_page_without_pagination_fails_even_if_empty(self):
+        class BrokenPageTwo:
+            def get(self, url, *, params=None, **kwargs):
+                if params["page"] == 1:
+                    return FakeResponse({
+                        "data": [{"id": 101, "state_id": 5,
+                                  "league_id": 8,
+                                  "starting_at": "2025-09-13 15:00:00"}],
+                        "pagination": {
+                            "current_page": 1, "has_more": True
+                        },
+                    })
+                return FakeResponse({"data": []})
+
+        with self.assertRaisesRegex(RuntimeError, "without pagination"):
+            discover_completed(BrokenPageTwo(), "fake_secret", config())
+
     def test_discovery_requires_valid_pagination_metadata(self):
         session = FakeSession()
         def malformed(url, *, params=None, headers=None, timeout=None):
