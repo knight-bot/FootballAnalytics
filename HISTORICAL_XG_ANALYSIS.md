@@ -47,8 +47,8 @@ for the methodology and interpretation limits.
   not automatically approved. Strictly stored regular-time Sportmonks
   `CURRENT` scores can now be compared to the other source after a
   controlled refresh, but operator confirmation remains required.
-- A link that has become \`stale_review\` or \`ambiguous\` will not
-  contribute to xG totals.
+- A link with a conflicting stored source score or a `stale_review`
+  or `ambiguous` status cannot contribute to xG totals.
 
 ## Which xG data are accepted
 
