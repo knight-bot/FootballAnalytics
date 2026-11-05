@@ -17,7 +17,8 @@ The preview shows the exact Markdown that will be exported. The file contains
 a team historical-results report, home/away differences, source match IDs,
 league-adjusted goal-strength indicators (Part A.2), reviewed historical
 standard xG (Part A.3), a **match-by-match coverage audit** (Part A.4),
-optional independent Sportmonks case studies, and limitations.
+source-backed last-five historical form and uncertainty analysis
+(Part A.6), optional independent Sportmonks case studies, and limitations.
 
 ## Additional statistical research
 
@@ -26,6 +27,12 @@ other-game context, and reviewed historical xG diagnostics. The
 same calculations are available in the existing Historical xG
 Analysis Streamlit page. See
 [Advanced Retrospective Research](HISTORICAL_ADVANCED_RESEARCH.md).
+
+**Part A.6** adds recorded historical scoring frequencies, strictly
+earlier completed-match form, multi-season goal trends, and a guarded
+reviewed-match xG uncertainty analysis. Empty or undersized samples are
+labeled unavailable, not guessed. See
+[Statistical Historical Research](HISTORICAL_STATISTICAL_RESEARCH.md).
 
 ## Critical source rule
 
