@@ -209,6 +209,34 @@ else:
         "not a simple average of each season's error."
     )
 
+st.markdown("**Retrospective error robustness**")
+paired = summary["paired_mae_delta_bootstrap95"]
+if paired is None:
+    st.caption(
+        "Paired MAE bootstrap uncertainty is withheld until 50 "
+        "eligible held-out completed games have been recorded."
+    )
+else:
+    st.caption(
+        f"Approximate 95% match-paired resampling interval for "
+        f"team-adjusted minus baseline MAE: "
+        f"{paired[0]:+.4f} to {paired[1]:+.4f}. "
+        "Repeated clubs and seasons weaken the independence assumption. "
+        "This is historical uncertainty, not future accuracy."
+    )
+sensitivity = summary["leave_one_season_out_delta_range"]
+if sensitivity is None:
+    st.caption(
+        "Leave-one-season-out sensitivity requires three eligible "
+        "historical held-out seasons."
+    )
+else:
+    st.caption(
+        f"Historical MAE delta after omitting each held-out season "
+        f"in turn ranged from {sensitivity[0]:+.4f} to "
+        f"{sensitivity[1]:+.4f} goals per team-match."
+    )
+
 if summary["seasons_included"] < 2:
     st.warning(
         "Fewer than two seasons passed. This cannot establish "
