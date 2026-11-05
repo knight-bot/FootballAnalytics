@@ -84,6 +84,20 @@ def main():
         print("No recognized team xG array in the fixture response.")
     else:
         print("Team xG records detected:", len(xg_values))
+    # Identify which xG metric types are returned. Sportmonks may return
+    # multiple xG-related types per team, so never sum all records together.
+    xg_records = fixture.get("xgfixture")
+    if isinstance(xg_records, list) and xg_records:
+        from collections import Counter
+        groups = Counter(
+            (str(item.get("type_id", "unknown")),
+             str(item.get("location", "unknown")))
+            for item in xg_records if isinstance(item, dict)
+        )
+        print("xG record groups (type_id, venue, count):")
+        for (type_id, venue), count in sorted(groups.items()):
+            print(f"  type_id={type_id}; venue={venue}; entries={count}")
+        print("Type IDs need definitions before calculating team xG.")
     print("Field inspection complete. No data was saved.")
 
 
