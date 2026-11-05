@@ -7,6 +7,7 @@ No forecasts, live games, credentials in output, or provider ID joins.
 """
 import json
 import os
+import re
 import sqlite3
 import sys
 from datetime import date, datetime, timedelta, timezone
@@ -108,9 +109,13 @@ def run_backfill(session, token, conn, config):
             summary["partial_saved_on_error"] += partially_saved
             summary["has_error"] = True
             # Existing importer error messages deliberately avoid credentials.
+            # Surface a safe HTTP status for rate-limit troubleshooting,
+            # never arbitrary provider messages or API headers/tokens.
+            http = re.search(r"HTTP (4[0-9]{2}|5[0-9]{2})", str(exc))
+            reason = http.group(0) if http else type(exc).__name__
             summary["error"] = (
                 f"Window {start.isoformat()} to {end.isoformat()}: "
-                f"{type(exc).__name__}; check the historical import logs."
+                f"{reason}. Previous completed fixtures remain saved."
             )
             break
         conn.commit()  # durable checkpoint after this valid window
