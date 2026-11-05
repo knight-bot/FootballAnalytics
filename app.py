@@ -1,5 +1,7 @@
 
 import sqlite3
+from contextlib import closing
+from research_readiness import assess_research_readiness
 from pathlib import Path
 
 import pandas as pd
@@ -47,6 +49,57 @@ st.caption("Historical football statistics and performance analysis")
 if not DB_FILE.exists():
     st.error("football.db was not found in the repository.")
     st.stop()
+
+@st.cache_data(ttl=300, show_spinner=False)
+def research_status(db_version):
+    with closing(sqlite3.connect(
+        f"file:{DB_FILE.as_posix()}?mode=ro", uri=True,
+    )) as conn:
+        return assess_research_readiness(conn)
+
+
+st.subheader("Research workspace")
+status = research_status(DB_FILE.stat().st_mtime_ns)
+r1, r2, r3, r4 = st.columns(4)
+r1.metric("Completed results stored", status["stored_completed_results"])
+r2.metric("Imported Sportmonks fixtures", status["imported_sportmonks_fixtures"])
+r3.metric("Operator-reviewed links", status["reviewed_source_links"])
+r4.metric("Reviewed two-sided xG", status["reviewed_two_sided_xg"])
+if status["invalid_results"]:
+    st.error("Invalid stored results require review in Historical Data Audit.")
+if status["xg_status"] == "no_reviewed_xg_sample":
+    st.warning(
+        "Historical goal statistics are available. However, there are no "
+        "operator-reviewed cross-provider xG matches. Imported xG is "
+        "not team-linked evidence yet."
+    )
+elif status["xg_status"] == "small_reviewed_sample":
+    st.info("Reviewed xG exists, but the sample is smaller than 10 matches.")
+else:
+    st.info(
+        "Reviewed xG is available; representativeness and official "
+        "season completeness are not established."
+    )
+a, b, c = st.columns(3)
+with a:
+    st.page_link("pages/12_Historical_xG_Analysis.py",
+                 label="Explore historical analysis", icon="📐")
+    st.page_link("pages/11_Multi_Season_Historical_Evaluation.py",
+                 label="Review historical benchmarks", icon="📚")
+with b:
+    st.page_link("pages/8_Historical_Fixture_Link_Review.py",
+                 label="Review source links", icon="🔗")
+    st.page_link("pages/13_Historical_Coverage_Audit.py",
+                 label="Inspect data coverage", icon="🧾")
+with c:
+    st.page_link("pages/7_ChatGPT_Research_Export.py",
+                 label="Export research evidence", icon="📄")
+st.caption(
+    "Read-only summaries of locally stored historical records. "
+    "Imported xG is not automatically matched to football-data.org results."
+)
+st.divider()
+
 
 
 @st.cache_data(ttl=300)
