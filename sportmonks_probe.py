@@ -63,7 +63,7 @@ def main():
 
     print("Fixture record found:", bool(fixture.get("id")))
     print("Available related data:")
-    for field in ("statistics", "participants", "scores", "expected", "xGFixture", "pressure"):
+    for field in ("statistics", "participants", "scores", "expected", "xgfixture", "xGFixture", "pressure"):
         value = fixture.get(field)
         if isinstance(value, list):
             detail = f"{len(value)} entries"
@@ -73,13 +73,17 @@ def main():
             detail = "not present"
         print(f"  {field}: {detail}")
 
-    # Sportmonks documents the include as xGFixture, but some responses
-    # represent the xG records in a field named "expected".
-    expected = fixture.get("expected")
-    if isinstance(expected, list):
-        print("xG records under 'expected':", len(expected))
+    # API responses can use different field names. Report only counts;
+    # do not expose the full response or authentication details.
+    xg_values = next(
+        (fixture[key] for key in ("xgfixture", "expected", "xGFixture")
+         if isinstance(fixture.get(key), list)),
+        None,
+    )
+    if xg_values is None:
+        print("No recognized team xG array in the fixture response.")
     else:
-        print("No 'expected' xG list in this fixture response.")
+        print("Team xG records detected:", len(xg_values))
     print("Field inspection complete. No data was saved.")
 
 
