@@ -154,6 +154,29 @@ class SourceFinalScoreTests(unittest.TestCase):
         self.assertEqual(compare_stored_score((3, 1), 2, 1), "mismatch")
         self.assertEqual(compare_stored_score((2, 1), 2, 1), "agrees")
 
+    def test_source_score_lookup_is_fixture_specific(self):
+        store_finished_fixture(self.db, sample_fixture((2, 1), fid=9001))
+        other = sample_fixture((1, 0), fid=9002)
+        other["starting_at"] = "2024-10-04 18:00:00"
+        other["name"] = "Chelsea vs Liverpool"
+        other["participants"][0]["name"] = "Chelsea"
+        other["participants"][1]["name"] = "Liverpool"
+        self.db.execute(
+            "INSERT INTO matches VALUES "
+            "(102,'2024-10-04T18:00:00Z','Premier League',"
+            "'Chelsea FC','Liverpool FC',1,0,'FINISHED')"
+        )
+        store_finished_fixture(self.db, other)
+        checks = {r["sportmonks_id"]: r for r in candidate_links(self.db)}
+        self.assertEqual(checks[9001]["score_comparison"], "agrees")
+        self.assertEqual(checks[9002]["score_comparison"], "agrees")
+        other["scores"][-2]["score"]["goals"] = 4
+        store_finished_fixture(self.db, other)
+        checks = {r["sportmonks_id"]: r for r in candidate_links(self.db)}
+        self.assertEqual(checks[9001]["score_comparison"], "agrees")
+        self.assertEqual(checks[9002]["score_comparison"], "mismatch")
+        self.assertEqual(checks[9002]["status"], "score_mismatch")
+
     def test_source_disagreement_blocks_manual_approval(self):
         store_finished_fixture(self.db, sample_fixture((3, 1)))
         row, = candidate_links(self.db)
