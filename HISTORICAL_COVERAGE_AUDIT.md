@@ -32,6 +32,7 @@ make future-match forecasts.
 | reviewed_complete_xg | Currently operator-reviewed link and exactly one valid standard xG value for each side |
 | reviewed_missing_xg | Currently operator-reviewed link, but one or both standard xG values are missing, invalid or ambiguous |
 | review_candidate | Source team identities, competition and kickoff agree, but the original Sportmonks final score has not been independently checked by the app |
+| score_mismatch | Stored Sportmonks CURRENT final score conflicts with the recorded football-data.org result; do not confirm |
 | ambiguous | More than one possible local association; do not confirm blindly |
 | stale_review | A previously reviewed source association no longer agrees with the currently stored identifying records |
 | no_imported_candidate | No unambiguous locally stored Sportmonks candidate is available for this completed result |
@@ -42,10 +43,11 @@ result only if its link remains reviewed. Unreviewed candidates may show
 their separate candidate Sportmonks ID for manual checking, but no
 cross-provider statistics are joined to them.
 
-**Important source caveat:** Sportmonks' original final score was not
-persisted by the initial importer. A reviewed association is
-*operator-attested*, not autonomously verified by the application.
-Do not claim the code checked score agreement automatically.
+**Important source caveat:** Older imported Sportmonks fixtures lack
+stored final scores. New regular-time imports can preserve unambiguous
+`CURRENT` scores and automatically flag disagreement with the
+other source. This is a source-consistency check, not automatic linking.
+A reviewed association is still *operator-attested*.
 
 ## Denominators and sample limitations
 
