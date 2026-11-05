@@ -44,6 +44,7 @@ jobs:
           python -m py_compile historical_import_planner.py pages/14_Historical_Import_Gap_Planner.py
           python -m py_compile historical_advanced_research.py
           python -m py_compile historical_statistical_research.py
+          python -m py_compile historical_statistical_cli.py
           python -m py_compile pages/8_Historical_Fixture_Link_Review.py
           python -m py_compile pages/7_ChatGPT_Research_Export.py
           python -m py_compile pages/4_Historical_Data_Audit.py
@@ -71,3 +72,6 @@ jobs:
 
       - name: Summarize historical data quality
         run: python audit_history_cli.py
+
+      - name: Summarize actual recorded historical scoring trends
+        run: python historical_statistical_cli.py
