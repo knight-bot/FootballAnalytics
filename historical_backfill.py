@@ -66,6 +66,52 @@ def has_fixture_table(conn):
     ).fetchone() is not None
 
 
+def safe_import_failure(exc):
+    """Classify provider failures without printing URLs, tokens or API bodies."""
+    raw = str(exc)
+    http = re.search(r"HTTP (4[0-9]{2}|5[0-9]{2})", raw)
+    if http:
+        status = int(http.group(1))
+        if status == 401:
+            return "HTTP 401: API credentials rejected; check the configured secret."
+        if status == 403:
+            return "HTTP 403: forbidden; verify historical coverage and subscription."
+        if status == 404:
+            return "HTTP 404: discovery endpoint or fixture unavailable."
+        if status == 429:
+            return "HTTP 429: provider rate limit; retry after quota resets."
+        if status == 422:
+            return "HTTP 422: date, league filter or API query rejected."
+        return f"HTTP {status}: provider rejected the historical request."
+    known = (
+        ("Could not access Sportmonks discovery endpoint",
+         "Network error while accessing historical discovery."),
+        ("Historical discovery returned invalid JSON",
+         "Provider discovery response was not valid JSON."),
+        ("Incomplete discovery response",
+         "Provider discovery omitted required data or pagination."),
+        ("Discovery has no valid has_more flag",
+         "Provider discovery omitted the required has_more flag."),
+        ("Unexpected historical discovery page sequence",
+         "Provider returned inconsistent pagination page numbers."),
+        ("Discovery exceeds the page safety limit",
+         "Provider returned too many pages; use a shorter date window."),
+        ("Unexpected data response for fixture",
+         "Provider returned unexpected fixture data."),
+        ("was not in the selected league",
+         "Provider fixture did not match the selected league."),
+        ("was outside the requested historical window",
+         "Provider fixture was outside the requested dates."),
+    )
+    for phrase, explanation in known:
+        if phrase in raw:
+            return explanation
+    return (
+        "Unexpected historical import failure; inspect the "
+        "provider request and configured permissions."
+    )
+
+
 def run_backfill(session, token, conn, config):
     """Resume by stored IDs and preserve fixture-level atomic commits.
 
@@ -109,13 +155,11 @@ def run_backfill(session, token, conn, config):
             summary["partial_saved_on_error"] += partially_saved
             summary["has_error"] = True
             # Existing importer error messages deliberately avoid credentials.
-            # Surface a safe HTTP status for rate-limit troubleshooting,
-            # never arbitrary provider messages or API headers/tokens.
-            http = re.search(r"HTTP (4[0-9]{2}|5[0-9]{2})", str(exc))
-            reason = http.group(0) if http else type(exc).__name__
             summary["error"] = (
                 f"Window {start.isoformat()} to {end.isoformat()}: "
-                f"{reason}. Previous completed fixtures remain saved."
+                f"{safe_import_failure(exc)} "
+                f"{partially_saved} fixture(s) preserved from this "
+                "failed window."
             )
             break
         conn.commit()  # durable checkpoint after this valid window
