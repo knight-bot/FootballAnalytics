@@ -86,7 +86,7 @@ st.subheader("What currently needs attention?")
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Old results missing candidates", plan["unmatched_eligible"])
 c2.metric("Candidates requiring review", plan["review_candidates"])
-c3.metric("Ambiguous or stale", plan["manual_resolution_count"])
+c3.metric("Score conflicts / ambiguous / stale", plan["manual_resolution_count"])
 c4.metric("Reviewed but missing xG", plan["reviewed_missing_xg_count"])
 st.caption(
     f"Latest eligible completed-match date: "
@@ -160,7 +160,7 @@ with st.expander("Candidates needing original-source score review"):
         )
     else:
         st.caption("No review candidates in this stored selection.")
-with st.expander("Ambiguous / stale records requiring manual resolution"):
+with st.expander("Score conflicts, ambiguous or stale records"): 
     if plan["manual_resolution_queue"]:
         st.dataframe(
             pd.DataFrame(plan["manual_resolution_queue"]),
@@ -191,6 +191,11 @@ st.download_button(
     data=import_plan_markdown(plan).encode("utf-8"),
     file_name=f"historical_import_gap_plan_{year}.md",
     mime="text/markdown",
+)
+st.caption(
+    "A source-score mismatch cannot be approved. Missing saved source "
+    "scores mean the operator must compare the original provider pages. "
+    "A stored match alone never authorizes cross-provider linking."
 )
 st.caption(
     "Local read-only evidence. Importing, provider-score verification "
