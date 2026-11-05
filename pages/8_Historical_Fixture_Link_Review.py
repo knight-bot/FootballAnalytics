@@ -86,6 +86,53 @@ st.download_button(
     file_name="historical_fixture_link_review.csv",
     mime="text/csv",
 )
+st.divider()
+st.subheader("Prepare a bounded bulk source review")
+st.caption(
+    "Use this worksheet to compare original provider fixture pages "
+    "one by one. Do not mark a pair checked unless you independently "
+    "verified its home and away teams, kickoff and final score in "
+    "BOTH providers. Score agreement shown here is not approval."
+)
+eligible = [row for row in rows if row["status"] == "review_candidate"]
+if eligible:
+    worksheet = pd.DataFrame([
+        {
+            "sportmonks_fixture_id": r["sportmonks_id"],
+            "football_data_match_id": r["match_id"],
+            "sportmonks_match": r["sportmonks_match"],
+            "football_data_match": r["result_match"],
+            "sportmonks_date": r["sportmonks_date"],
+            "result_date": r["result_date"],
+            "sportmonks_stored_final_score":
+                r["sportmonks_stored_final_score"],
+            "football_data_final_score": r["result_score"],
+            "score_comparison": r["score_comparison"],
+            "original_sources_independently_checked": "NO",
+            "reviewer_notes": "",
+        }
+        for r in eligible
+    ])
+    st.download_button(
+        "Download manually checked fixture review worksheet (.csv)",
+        data=worksheet.to_csv(index=False).encode("utf-8"),
+        file_name="historical_source_review_worksheet.csv",
+        mime="text/csv",
+    )
+    st.caption(
+        "After independently checking each eligible pair, enter ONLY "
+        "personally verified pairs into the bulk GitHub Action as "
+        "SportmonksID:MatchID:CHECKED, separated with semicolons. "
+        "Maximum 20 entries per approval run."
+    )
+    st.markdown(
+        "[Confirm Checked Historical Fixture Pairs in GitHub Actions]"
+        "(https://github.com/knight-bot/FootballAnalytics/actions/workflows/"
+        "confirm-bulk-historical-links.yml)"
+    )
+else:
+    st.info("No unambiguous, unreviewed candidates to prepare.")
+
 st.subheader("Manual confirmation process")
 st.markdown(
     "1. Find a **review_candidate** row with two IDs and identical "
