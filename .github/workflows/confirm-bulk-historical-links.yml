@@ -1,0 +1,52 @@
+name: Confirm Checked Historical Fixture Pairs
+
+on:
+  workflow_dispatch:
+    inputs:
+      checked_pairs:
+        description: "Only personally checked pairs: SportmonksID:MatchID:CHECKED;SportmonksID:MatchID:CHECKED (max 20)"
+        required: true
+        type: string
+      all_scores_compared:
+        description: "I independently checked BOTH original provider records for EVERY submitted pair"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: football-database-update
+  cancel-in-progress: false
+
+jobs:
+  review_checked_pairs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout reviewed data
+        uses: actions/checkout@v4
+      - name: Configure Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check source-validation tests
+        run: |
+          python -m py_compile bulk_confirm_historical_links.py
+          python -m unittest -q test_bulk_confirm_historical_links.py test_historical_fixture_linkage.py test_historical_score_evidence.py
+      - name: Approve explicitly attested matching source pairs
+        env:
+          HISTORICAL_REVIEW_PAIRS: ${{ inputs.checked_pairs }}
+          HISTORICAL_BULK_SCORES_CHECKED: ${{ inputs.all_scores_compared && 'YES_I_COMPARED_ALL_SOURCE_SCORES' || 'NO' }}
+        run: python bulk_confirm_historical_links.py
+      - name: Save all-or-nothing approved associations
+        run: |
+          if [ -n "$(git status --porcelain football.db)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add football.db
+            git commit -m "Record manually reviewed historical source-pair batch"
+            git push
+          else
+            echo "No new reviewed source associations."
+          fi
