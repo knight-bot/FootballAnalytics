@@ -62,8 +62,8 @@ to \`stale_review\` rather than silently continuing to join it.
    season, and download the updated Markdown report. Any reviewed,
    currently valid fixture matching that selection appears in Part A.1.
 
-**Do not confirm** any \`unmatched\`, \`ambiguous\` or \`stale_review\`
-entry. Do not assume the presence of a Sportmonks metric means every
+**Do not confirm** any `score_mismatch`, `unmatched`,
+`ambiguous`, or `stale_review` entry. Do not assume the presence of a Sportmonks metric means every
 match in a team's season has that metric.
 
 ## Offline testing
