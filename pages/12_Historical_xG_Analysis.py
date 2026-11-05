@@ -142,7 +142,7 @@ h.metric("Reviewed links missing xG", analysis["reviewed_missing_xg"])
 if not analysis["match_rows"]:
     st.warning(
         "No eligible reviewed fixture has complete standard xG for both teams. "
-        "This is missing verified data, not evidence that xG is zero."
+        "This is missing eligible reviewed data, not evidence xG is zero."
     )
     st.caption(
         "Verify matching fixtures on Historical Fixture Link Review, then "
