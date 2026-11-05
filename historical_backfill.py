@@ -182,9 +182,9 @@ def main():
     if not token:
         raise ValueError("Missing SPORTMONKS_API_TOKEN GitHub Actions secret.")
     config = parse_backfill_config()
-    retry = Retry(
-        total=2, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504],
-        allowed_methods=frozenset({"GET"}), respect_retry_after_header=True,
+    # HTTP 429 may require an hour-long reset. Stop and checkpoint rather\n    # than blocking a CI job waiting for an unbounded Retry-After.\n    retry = Retry(
+        total=2, backoff_factor=1, status_forcelist=[500, 502, 503, 504],
+        allowed_methods=frozenset({"GET"}), respect_retry_after_header=False,
     )
     with requests.Session() as session:
         session.mount("https://api.sportmonks.com/", HTTPAdapter(max_retries=retry))
