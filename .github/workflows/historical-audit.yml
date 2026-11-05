@@ -25,6 +25,7 @@ jobs:
         run: |
           python -m py_compile historical_audit.py audit_history_cli.py
           python -m py_compile historical_reports.py historical_evidence.py historical_ai.py
+          python -m py_compile sportmonks_historical_batch.py
           python -m py_compile pages/4_Historical_Data_Audit.py
           python -m py_compile pages/5_Historical_Research_Reports.py
           python -m py_compile pages/6_Historical_Evidence_Research.py
@@ -35,7 +36,8 @@ jobs:
             test_sportmonks_historical_import.py \
             test_historical_audit.py \
             test_historical_reports.py \
-            test_historical_evidence_ai.py
+            test_historical_evidence_ai.py \
+            test_sportmonks_historical_batch.py
 
       - name: Summarize historical data quality
         run: python audit_history_cli.py
