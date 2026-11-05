@@ -28,11 +28,14 @@ automatic acceptance when one match has multiple possible partners.
 
 ## Why confirmation is manual
 
-The current Sportmonks importer stores the **number** of score records
-returned by the API but does not store the actual final score. The
-football-data.org match table does store final scores. Therefore a
-name/date match alone **cannot prove** both sources describe the same
-completed fixture.
+Older stored Sportmonks fixtures captured the **number** of score
+records but not the actual result. The upgraded importer can now persist
+strict `CURRENT` final-score evidence for an unambiguous regular-time
+`FINISHED` match. After those fixtures are refreshed, the matcher checks
+whether the stored Sportmonks score agrees with the football-data.org
+result. A discrepancy receives `score_mismatch` and cannot be approved.
+For extra-time or penalty-ending fixtures, or absent/ambiguous score
+records, the stored comparison remains unavailable.
 
 A reviewed association means **the GitHub workflow operator attested**
 that the original sources' final scores agreed. It is not a separately
@@ -72,5 +75,10 @@ direction, league constraints, incomplete fixtures, conflicting
 matches, duplicate candidates, explicit score-check attestation,
 stale links, and safe team-report inclusion.
 
-A green offline test suite cannot establish actual Sportmonks scores or
-provider-wide completeness. Manual verification remains essential.
+Stored score agreement corroborates an association but never approves
+it automatically. Operator attestation remains required. A green offline
+test suite cannot establish actual provider-wide coverage; manual
+verification remains essential.
+
+See [Historical source-score quality checks](HISTORICAL_SOURCE_SCORE_QA.md)
+for the controlled refresh procedure.
