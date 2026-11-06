@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import sqlite3
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -160,10 +161,11 @@ def compare_original_evidence(candidate, sm, fd):
 
 
 def collect_evidence(session, conn, sportmonks_token, football_token,
-                     start, end, limit=MAX_PAIRS):
+                     start, end, limit=MAX_PAIRS, throttle_seconds=0):
     entries = []
     candidates = selected_candidates(conn, start, end, limit)
     blocked_provider = set()
+    football_calls = 0
     for candidate in candidates:
         sid, mid = candidate["sportmonks_id"], candidate["match_id"]
         urls = (
@@ -187,6 +189,10 @@ def collect_evidence(session, conn, sportmonks_token, football_token,
                     "http_status": None,
                 }
             else:
+                if provider == "football_data":
+                    if football_calls and throttle_seconds:
+                        time.sleep(throttle_seconds)
+                    football_calls += 1
                 payload, transport = _original_get(
                     session, url, headers=headers, params=params,
                 )
@@ -278,6 +284,7 @@ def main():
         with requests.Session() as session:
             entries = collect_evidence(
                 session, conn, sm, fd, start, end, limit,
+                throttle_seconds=7,
             )
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR/"original_provider_evidence.json").write_text(
