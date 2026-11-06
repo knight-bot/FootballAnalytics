@@ -98,6 +98,43 @@ before making decisions. Avoid duplicating work from other agents/users.
   verification and give the user the exact access blocker, rather than
   claiming the match is verified.
 
+## Authentication workaround (added after Work browser access failures)
+
+The first Work inspection of 10 September candidates could not access
+either provider's original fixture records. Sportmonks browser requests
+returned "No token provided"; football-data.org returned HTTP 403.
+These are access failures, NOT match mismatches or verified pairs.
+
+The repository's GitHub Actions already provides the two existing
+secrets `SPORTMONKS_API_TOKEN` and `FOOTBALL_API_TOKEN` to import
+workflows. It now also provides a dedicated, **read-only evidence
+collection workflow**:
+
+https://github.com/knight-bot/FootballAnalytics/actions/workflows/collect-original-provider-evidence.yml
+
+Use the inputs `start_date=2025-09-12`,
+`end_date=2025-09-25`, `max_pairs=10`. The workflow fetches
+original records via BOTH authenticated provider APIs by their
+individual immutable match ID. It creates a downloadable artifact
+named `original-historical-source-evidence`, containing only a
+sanitized JSON field snapshot, request outcome and SHA-256 checksum
+for each original-record pair, plus a summary. It **does not include**
+API tokens, raw provider responses, or human approvals.
+
+If either API responds 401, 403, 429 or cannot be reached, a row
+remains UNAVAILABLE and must NOT be approved. Even when two fresh
+original provider records are automatically consistent, the
+`CONSISTENT_REQUIRES_REVIEW` label means independent inspection of
+the provider evidence by a reviewer is STILL required. No code path
+in this workflow writes cross-provider association approvals or
+touches the SQLite database.
+
+Ask Work to run the authenticated GitHub Action, download and inspect
+the original provider evidence artifact, and report trustworthy
+records, blocked records and precise API permission failures.
+**Do not falsely certify independent source checks if only a
+cached/local fixture record was available.**
+
 ## Useful navigation
 
 - Latest backfill and summary:
