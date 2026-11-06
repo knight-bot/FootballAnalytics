@@ -90,7 +90,7 @@ class OriginalEvidenceTests(unittest.TestCase):
         )
         self.assertFalse(out[0]["operator_approved"])
         self.assertEqual(len(out[0]["provider_evidence"]), 2)
-        self.assertIn("Arsenal", evidence_summary(out))
+        self.assertIn("CONSISTENT_REQUIRES_REVIEW", evidence_summary(out))
         self.assertNotIn("PRIVATE_SM", str(out))
         self.assertNotIn("PRIVATE_FD", str(out))
         self.assertIn("PRIVATE_SM", str(s.calls))  # header used privately
