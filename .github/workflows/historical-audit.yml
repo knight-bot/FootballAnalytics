@@ -49,6 +49,7 @@ jobs:
           python -m py_compile research_readiness.py app.py
           python -m py_compile historical_backfill.py historical_season_quality.py
           python -m py_compile bulk_confirm_historical_links.py
+          python -m py_compile collect_original_provider_evidence.py
           python -m py_compile historical_quality_cli.py
           python -m py_compile test_streamlit_smoke.py
           python -m py_compile pages/8_Historical_Fixture_Link_Review.py
@@ -78,7 +79,8 @@ jobs:
             test_research_readiness.py \
             test_historical_backfill.py \
             test_bulk_confirm_historical_links.py \
-            test_historical_season_quality.py
+            test_historical_season_quality.py \
+            test_collect_original_provider_evidence.py
 
       - name: Smoke-test Streamlit homepage and research pages
         run: python -m unittest -q test_streamlit_smoke.py
