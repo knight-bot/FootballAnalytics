@@ -1,6 +1,6 @@
 # Historical Premier League source review, August 15–September 11, 2025
 
-20 pairs verified and approved in the first two batches. Each provider returned its requested immutable ID, the correct home and away teams, an identical UTC kickoff and an identical full-time score. Sportmonks league 8 and state 5 agreed with football-data.org competition PL, status FINISHED and duration REGULAR. All 40 requests returned HTTP 200. The ZIP and per-pair SHA-256 checksums were checked. All times below are UTC.
+30 of 30 eligible pairs verified and approved. Each provider returned its requested immutable ID, the correct home and away teams, an identical UTC kickoff and an identical full-time score. Sportmonks league 8 and state 5 agreed with football-data.org competition PL, status FINISHED and duration REGULAR. All 60 requests returned HTTP 200. The ZIP and per-pair SHA-256 checksums were checked. All times below are UTC.
 
 ## Batch 1
 
@@ -36,3 +36,26 @@
 | [19427471](https://api.sportmonks.com/v3/football/fixtures/19427471) | [537801](https://api.football-data.org/v4/matches/537801) | Fulham / Manchester United | Fulham FC / Manchester United FC | 2025-08-24T15:30:00Z | 1–1 | 2026-11-06T09:38:01.034074+00:00 / 2026-11-06T09:38:08.193805+00:00 | 2026-11-06T09:41:58+00:00 | VERIFIED |
 | [19427473](https://api.sportmonks.com/v3/football/fixtures/19427473) | [537803](https://api.football-data.org/v4/matches/537803) | Newcastle United / Liverpool | Newcastle United FC / Liverpool FC | 2025-08-25T19:00:00Z | 2–3 | 2026-11-06T09:38:08.858521+00:00 / 2026-11-06T09:38:16.020247+00:00 | 2026-11-06T09:41:58+00:00 | VERIFIED |
 
+## Batch 3
+
+[Provider evidence](https://github.com/knight-bot/FootballAnalytics/actions/runs/42197491197) · [Approval](https://github.com/knight-bot/FootballAnalytics/actions/runs/42197718088)
+
+| Sportmonks original | football-data.org original | Sportmonks home / away | football-data.org home / away | Kickoff | FT | Original fetch times (SM / FD) | Review recorded | Outcome |
+|---|---|---|---|---|---|---|---|---|
+| [19427477](https://api.sportmonks.com/v3/football/fixtures/19427477) | [537808](https://api.football-data.org/v4/matches/537808) | Chelsea / Fulham | Chelsea FC / Fulham FC | 2025-08-30T11:30:00Z | 2–0 | 2026-11-06T09:46:11.568760+00:00 / 2026-11-06T09:46:12.145125+00:00 | 2026-11-06T09:47:49+00:00 | VERIFIED |
+| [19427480](https://api.sportmonks.com/v3/football/fixtures/19427480) | [537811](https://api.football-data.org/v4/matches/537811) | Manchester United / Burnley | Manchester United FC / Burnley FC | 2025-08-30T14:00:00Z | 3–2 | 2026-11-06T09:46:12.767236+00:00 / 2026-11-06T09:46:19.941381+00:00 | 2026-11-06T09:47:49+00:00 | VERIFIED |
+| [19427482](https://api.sportmonks.com/v3/football/fixtures/19427482) | [537805](https://api.football-data.org/v4/matches/537805) | Sunderland / Brentford | Sunderland AFC / Brentford FC | 2025-08-30T14:00:00Z | 2–1 | 2026-11-06T09:46:20.621248+00:00 / 2026-11-06T09:46:27.797288+00:00 | 2026-11-06T09:47:49+00:00 | VERIFIED |
+| [19427483](https://api.sportmonks.com/v3/football/fixtures/19427483) | [537813](https://api.football-data.org/v4/matches/537813) | Tottenham Hotspur / AFC Bournemouth | Tottenham Hotspur FC / AFC Bournemouth | 2025-08-30T14:00:00Z | 0–1 | 2026-11-06T09:46:28.485711+00:00 / 2026-11-06T09:46:35.661601+00:00 | 2026-11-06T09:47:49+00:00 | VERIFIED |
+| [19427484](https://api.sportmonks.com/v3/football/fixtures/19427484) | [537814](https://api.football-data.org/v4/matches/537814) | Wolverhampton Wanderers / Everton | Wolverhampton Wanderers FC / Everton FC | 2025-08-30T14:00:00Z | 2–3 | 2026-11-06T09:46:36.349079+00:00 / 2026-11-06T09:46:43.522505+00:00 | 2026-11-06T09:47:49+00:00 | VERIFIED |
+| [19427478](https://api.sportmonks.com/v3/football/fixtures/19427478) | [537810](https://api.football-data.org/v4/matches/537810) | Leeds United / Newcastle United | Leeds United FC / Newcastle United FC | 2025-08-30T16:30:00Z | 0–0 | 2026-11-06T09:46:44.113097+00:00 / 2026-11-06T09:46:51.288444+00:00 | 2026-11-06T09:47:49+00:00 | VERIFIED |
+| [19427476](https://api.sportmonks.com/v3/football/fixtures/19427476) | [537807](https://api.football-data.org/v4/matches/537807) | Brighton & Hove Albion / Manchester City | Brighton & Hove Albion FC / Manchester City FC | 2025-08-31T13:00:00Z | 2–1 | 2026-11-06T09:46:51.999775+00:00 / 2026-11-06T09:46:59.173622+00:00 | 2026-11-06T09:47:49+00:00 | VERIFIED |
+| [19427481](https://api.sportmonks.com/v3/football/fixtures/19427481) | [537812](https://api.football-data.org/v4/matches/537812) | Nottingham Forest / West Ham United | Nottingham Forest FC / West Ham United FC | 2025-08-31T13:00:00Z | 0–3 | 2026-11-06T09:46:59.563190+00:00 / 2026-11-06T09:47:06.798205+00:00 | 2026-11-06T09:47:49+00:00 | VERIFIED |
+| [19427479](https://api.sportmonks.com/v3/football/fixtures/19427479) | [537809](https://api.football-data.org/v4/matches/537809) | Liverpool / Arsenal | Liverpool FC / Arsenal FC | 2025-08-31T15:30:00Z | 1–0 | 2026-11-06T09:47:07.452658+00:00 / 2026-11-06T09:47:14.626040+00:00 | 2026-11-06T09:47:49+00:00 | VERIFIED |
+| [19427475](https://api.sportmonks.com/v3/football/fixtures/19427475) | [537806](https://api.football-data.org/v4/matches/537806) | Aston Villa / Crystal Palace | Aston Villa FC / Crystal Palace FC | 2025-08-31T18:00:00Z | 0–3 | 2026-11-06T09:47:15.238766+00:00 / 2026-11-06T09:47:22.420830+00:00 | 2026-11-06T09:47:49+00:00 | VERIFIED |
+
+
+## Database and coverage checks
+
+[Database commit](https://github.com/knight-bot/FootballAnalytics/commit/23ba7af2bb948b53c0922f49c4d6acba8b6a6823) · [Full historical audit](https://github.com/knight-bot/FootballAnalytics/actions/runs/42197785886)
+
+The final database contained the same 20 prior approval rows, including reviewer metadata, plus exactly the 30 reviewed pairs in this log. SQLite integrity returned OK and the foreign-key check returned zero findings. The Historical Coverage Audit on the 380 local 2025/26 Premier League results reports A=50, B=0, C=0, D=0, U=330. Reviewed two-sided xG coverage rose from 5.26% to 13.16%. The database contains 1,924 completed results and 61 independent Sportmonks imports. Ten October 2026 candidates await review. One fixture, RB Leipzig vs Manchester City (19872618), has an unsupported league mapping. Eleven imports lack stored unambiguous final scores.
